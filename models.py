@@ -3,8 +3,6 @@ Models for generic tagging.
 """
 import urllib
 from django.db import backend, models
-
-# Models
 from django.contrib.contenttypes.models import ContentType
 
 class TagManager(models.Manager):
@@ -18,7 +16,7 @@ class TagManager(models.Manager):
                                         items__object_id=obj.id))
         updated_tag_names = []
         if tag_list != None:
-            updated_tag_names = tag_list.split()
+            updated_tag_names = set(tag_list.split())
 
         # Remove tags which no longer apply
         tags_for_removal = [tag for tag in current_tags \
