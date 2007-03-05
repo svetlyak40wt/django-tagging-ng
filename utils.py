@@ -15,5 +15,7 @@ def create_dummy_tags(tag_list):
     This can be used to reuse an item's list of tag names for display
     purposes instead of loading tags from the database.
     """
-    tag_names = tag_list.split()
+    tag_names = []
+    if tag_list != None:
+        tag_names = set(tag_list.split())
     return [DummyTag(tag_name) for tag_name in tag_names]
