@@ -72,6 +72,8 @@ class Tag(models.Model):
 
     class Meta:
         db_table = 'tag'
+        verbose_name = 'Tag'
+        verbose_name_plural = 'Tags'
 
     class Admin:
         pass
@@ -110,6 +112,8 @@ class TaggedItem(models.Model):
 
     class Meta:
         db_table = 'tagged_item'
+        verbose_name = 'Tagged Item'
+        verbose_name_plural = 'Tagged Items'
         unique_together = (('tag', 'content_type', 'object_id'),)
 
     class Admin:
