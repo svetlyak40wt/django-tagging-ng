@@ -1,6 +1,5 @@
 from django.db.models import get_model
 from django.template import Library, Node, TemplateSyntaxError, resolve_variable
-
 from tagging.models import Tag, TaggedItem
 
 register = Library()
