@@ -27,7 +27,6 @@ class TaggedObjectsNode(Node):
                                                                     self.tag)
         return ''
 
-@register.tag(name='tags_for_object')
 def do_tags_for_object(parser, token):
     """
     Retrieves a list of Tag objects associated with an object and
@@ -44,7 +43,6 @@ def do_tags_for_object(parser, token):
         raise TemplateSyntaxError("second argument to %s tag must be 'as'" % bits[0])
     return TagsForObjectNode(bits[1], bits[3])
 
-@register.tag(name='tagged_objects')
 def do_tagged_objects(parser, token):
     """
     Retrieves a list of objects for a given Model which are tagged with
@@ -66,3 +64,6 @@ def do_tagged_objects(parser, token):
     if bits[4] != 'as':
         raise TemplateSyntaxError("fourth argument to %s tag must be 'as'" % bits[0])
     return TaggedObjectsNode(bits[1], bits[3], bits[5])
+
+register.tag('tags_for_object', do_tags_for_object)
+register.tag('tagged_objects', do_tagged_objects)

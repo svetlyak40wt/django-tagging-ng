@@ -6,6 +6,10 @@ import urllib
 from django.db import backend, models
 from django.contrib.contenttypes.models import ContentType
 
+# Python 2.3 compatibility
+if not hasattr(__builtins__, 'set'):
+    from sets import Set as set
+
 class TagManager(models.Manager):
     def update_tags(self, obj, tag_list):
         """
