@@ -4,6 +4,7 @@ Models for generic tagging.
 import math
 from django.db import backend, models
 from django.contrib.contenttypes.models import ContentType
+from tagging.utils import split_tag_list
 
 # Python 2.3 compatibility
 if not hasattr(__builtins__, 'set'):
@@ -18,9 +19,7 @@ class TagManager(models.Manager):
         ctype = ContentType.objects.get_for_model(obj)
         current_tags = list(self.filter(items__content_type__pk=ctype.id,
                                         items__object_id=obj.id))
-        updated_tag_names = []
-        if tag_list != None:
-            updated_tag_names = set(tag_list.split())
+        updated_tag_names = set(split_tag_list(tag_list))
 
         # Remove tags which no longer apply
         tags_for_removal = [tag for tag in current_tags \
