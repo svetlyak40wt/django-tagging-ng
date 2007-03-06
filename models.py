@@ -48,8 +48,9 @@ class TagManager(models.Manager):
         Create a queryset matching all tags associated with instances
         of the given Model.
 
-        If ``counts`` is True, a 'count' attribute will be added to
-        each tag, indicating how many times it has been used.
+        If ``counts`` is True, a ``count`` attribute will be added to
+        each tag, indicating how many times it has been used against
+        the Model in question.
         """
         ctype = ContentType.objects.get_for_model(Model)
         qs = self.filter(items__content_type__pk=ctype.id)
@@ -140,6 +141,7 @@ class TaggedItem(models.Model):
         db_table = 'tagged_item'
         verbose_name = 'Tagged Item'
         verbose_name_plural = 'Tagged Items'
+        # Enforce unique tag association per object
         unique_together = (('tag', 'content_type', 'object_id'),)
 
     class Admin:
