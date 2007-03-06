@@ -101,6 +101,7 @@ class Tag(models.Model):
         db_table = 'tag'
         verbose_name = 'Tag'
         verbose_name_plural = 'Tags'
+        ordering = ('name',)
 
     class Admin:
         pass
