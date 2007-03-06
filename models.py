@@ -53,7 +53,7 @@ class TagManager(models.Manager):
         the Model in question.
         """
         ctype = ContentType.objects.get_for_model(Model)
-        qs = self.filter(items__content_type__pk=ctype.id)
+        qs = self.filter(items__content_type__pk=ctype.id).distinct()
         if counts is True:
             qs = qs.extra(
                 select={
