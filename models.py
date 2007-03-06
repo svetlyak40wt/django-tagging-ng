@@ -2,7 +2,6 @@
 Models for generic tagging.
 """
 import math
-import urllib
 from django.db import backend, models
 from django.contrib.contenttypes.models import ContentType
 
