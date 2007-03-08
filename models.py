@@ -13,8 +13,7 @@ if not hasattr(__builtins__, 'set'):
 class TagManager(models.Manager):
     def update_tags(self, obj, tag_list):
         """
-        Update tags associated with an object, where the updated list
-        of tags is given as a space-delimited string.
+        Update tags associated with an object.
         """
         ctype = ContentType.objects.get_for_model(obj)
         current_tags = list(self.filter(items__content_type__pk=ctype.id,
