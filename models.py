@@ -79,19 +79,20 @@ class TagManager(models.Manager):
         http://www.car-chase.net/2007/jan/16/log-based-tag-clouds-python/
         """
         tags = list(self.usage_for_model(Model, counts=True))
-        new_thresholds, results = [], []
-        temp = [tag.count for tag in tags]
-        max_weight = float(max(temp))
-        min_weight = float(min(temp))
-        new_delta = (max_weight - min_weight)/float(steps)
-        for i in range(steps + 1):
-            new_thresholds.append((100 * math.log((min_weight + i * new_delta) + 2), i))
-        for tag in tags:
-            font_set = False
-            for threshold in new_thresholds[1:int(steps)+1]:
-                if (100 * math.log(tag.count + 2)) <= threshold[0] and not font_set:
-                    tag.font_size = threshold[1]
-                    font_set = True
+        if len(tags) > 0:
+            new_thresholds, results = [], []
+            temp = [tag.count for tag in tags]
+            max_weight = float(max(temp))
+            min_weight = float(min(temp))
+            new_delta = (max_weight - min_weight)/float(steps)
+            for i in range(steps + 1):
+                new_thresholds.append((100 * math.log((min_weight + i * new_delta) + 2), i))
+            for tag in tags:
+                font_set = False
+                for threshold in new_thresholds[1:int(steps)+1]:
+                    if (100 * math.log(tag.count + 2)) <= threshold[0] and not font_set:
+                        tag.font_size = threshold[1]
+                        font_set = True
         return tags
 
 class Tag(models.Model):
