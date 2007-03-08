@@ -120,14 +120,15 @@ class TaggedItemManager(models.Manager):
         qn = backend.quote_name
         ctype = ContentType.objects.get_for_model(Model)
         opts = self.model._meta
+        quoted_table = qn(opts.db_table)
         return Model.objects.extra(
             tables=[opts.db_table], # Use a non-explicit join
             where=[
-                '%s.content_type_id = %%s' % qn(opts.db_table),
-                '%s.tag_id = %%s' % qn(opts.db_table),
+                '%s.content_type_id = %%s' % quoted_table,
+                '%s.tag_id = %%s' % quoted_table,
                 '%s.%s = %s.object_id' % (qn(Model._meta.db_table),
                                           qn(Model._meta.pk.column),
-                                          qn(opts.db_table))
+                                          quoted_table)
             ],
             params=[ctype.id, tag.id],
         )
