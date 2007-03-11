@@ -2,10 +2,15 @@
 Django Tagging
 ==============
 
+A generic tagging application for Django projects, which allows
+association of a number of tags with any ``Model`` instance and makes
+retrieval of tags simple.
+
+
 Tagging objects
 ===============
 
-``Tag`` Manager methods
+``TagManager`` methods
 -----------------------
 
 The ``Tag`` model's ``Manager`` object, accessible through its
@@ -24,10 +29,30 @@ may be specified, separated by any number of commas and spaces.
 If ``tag_list`` is ``None``, the object's tags will be cleared.
 
 
+Retrieving tagged objects
+=========================
+
+``TaggedItemManager`` methods
+------------------------------
+
+The ``TaggedItem`` model's ``Manager`` object, accessible through its
+``objects`` attribute, defines methods which may be used to retrieve
+objects based on the ``Tag`` objects they are tagged with.
+
+``get_by_model(Model, tag)``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If ``tag`` is an instance of a ``Tag``, returns a ``QuerySet``
+containing all instances of ``Model`` which are tagged with ``tag``.
+
+If ``tag`` is a list of tags, returns a ``QuerySet`` containing all
+instances of ``Model`` which are tagged with every tag in the list.
+
+
 Retrieving tags
 ===============
 
-``Tag`` Manager methods
+``TagManager`` methods
 -----------------------
 
 The ``Tag`` model's ``Manager`` object also defines methods which may
@@ -66,18 +91,62 @@ Chase Davis, `Log-based tag clouds in Python`_.
 .. _`Log-based tag clouds in Python`: http://www.car-chase.net/2007/jan/16/log-based-tag-clouds-python/
 
 
-Simplified tagging and retrieval of tags
-========================================
+Fields
+======
 
-A useful method for simplifying tagging and retrieval of tags for your
-models is to set up a property::
+The ``tagging.fields`` module contains fields which make it easy to
+integrate tagging into your models and into the
+``django.contrib.admin`` application.
+
+Field types
+-----------
+
+``TagField``
+~~~~~~~~~~~~
+
+A ``CharField`` that actually works as a relationship to tags "under
+the hood".
+
+Using this example model::
+
+    class Link(models.Model):
+        ...
+        tags = TagField()
+
+Setting tags::
+
+    >>> l = Link.objects.get(...)
+    >>> l.tags = 'tag1 tag2 tag3'
+
+Getting tags for an instance::
+
+    >>> l.tags
+    'tag1 tag2 tag3'
+
+Getting tags for a model - i.e. all tags used by all instances of the
+model::
+
+    >>> Link.tags
+    'tag1 tag2 tag3 tag4 tag5'
+
+This field will also validate that it has been given a valid list of
+tag names, separated by a single comma, a single space or a comma
+followed by a space, using the ``isTagList`` validator from
+``tagging.validators``.
+
+
+Simplified tagging and retrieval of tags with properties
+========================================================
+
+If you're not using ``TagField``, a useful method for simplifying
+tagging and retrieval of tags for your models is to set up a property::
 
     from django.db import models
     from tagging.models import Tag
 
     class MyModel(models.Model):
-        name = models.CharField(maxlength=250)
-        tag_list = models.CharField(maxlength=250)
+        name = models.CharField(maxlength=100)
+        tag_list = models.CharField(maxlength=255)
 
         def save(self):
             super(MyModel, self).save()
@@ -104,20 +173,3 @@ natural way::
 
 Remember that ``obj.tags`` will return a ``QuerySet``, so you can
 perform further filtering on it, should you need to.
-
-
-Retrieving tagged objects
-=========================
-
-``TaggedItem`` Manager methods
-------------------------------
-
-The ``TaggedItem`` model's ``Manager`` object, accessible through its
-``objects`` attribute, defines methods which may be used to retrieve
-objects based on the ``Tag`` objects they are tagged with.
-
-``get_by_model(Model, tag)``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Returns a ``QuerySet`` containing all instances of ``Model``
-which are tagged with ``tag``.
