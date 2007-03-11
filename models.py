@@ -2,7 +2,8 @@
 Models for generic tagging.
 """
 import math
-from django.db import backend, models
+from django.db import backend, connection, models
+from django.db.models.query import QuerySet
 from django.contrib.contenttypes.models import ContentType
 from tagging.utils import split_tag_list
 
@@ -115,23 +116,76 @@ class TaggedItemManager(models.Manager):
     def get_by_model(self, Model, tag):
         """
         Create a queryset matching instances of the given Model
-        associated the given Tag.
+        associated with a given Tag or list of Tags.
         """
-        qn = backend.quote_name
+        if isinstance(tag, (list, tuple, QuerySet)):
+            if len(tag) == 1: # Optimisation for single tag
+                tag = tag[0]
+            else:
+                return self.get_intersection_by_model(Model, tag)
         ctype = ContentType.objects.get_for_model(Model)
-        opts = self.model._meta
-        quoted_table = qn(opts.db_table)
+        rel_table = backend.quote_name(self.model._meta.db_table)
         return Model.objects.extra(
-            tables=[opts.db_table], # Use a non-explicit join
+            tables=[self.model._meta.db_table], # Use a non-explicit join
             where=[
-                '%s.content_type_id = %%s' % quoted_table,
-                '%s.tag_id = %%s' % quoted_table,
-                '%s.%s = %s.object_id' % (qn(Model._meta.db_table),
-                                          qn(Model._meta.pk.column),
-                                          quoted_table)
+                '%s.content_type_id = %%s' % rel_table,
+                '%s.tag_id = %%s' % rel_table,
+                '%s.%s = %s.object_id' % (backend.quote_name(Model._meta.db_table),
+                                          backend.quote_name(Model._meta.pk.column),
+                                          rel_table)
             ],
             params=[ctype.id, tag.id],
         )
+
+    def get_intersection_by_model(self, Model, tags):
+        """
+        Create a queryset matching instances of the given Model
+        associated with all the given list of Tags.
+
+        FIXME The query currently used to grabs the ids of objects
+              which have all the tags should be all that we need run,
+              using a non-explicit join for the QuerySet returned, as
+              in get_by_model, but there's currently no way to get the
+              required GROUP BY and HAVING clauses into Django's ORM.
+
+              Once the ORM is capable of this, we should have a
+              solution which requires only a single query and won't
+              have the problem where the number of ids in the IN
+              clause in the QuerySet could exceed the length allowed,
+              as could currently happen.
+        """
+        rel_table = backend.quote_name(self.model._meta.db_table)
+        model_table = backend.quote_name(Model._meta.db_table)
+        model_pk = '%s.%s' % (model_table,
+                              backend.quote_name(Model._meta.pk.column))
+        tag_count = len(tags)
+        # This query selects the ids of all objects which have all the
+        # given tags.
+        query = """
+        SELECT %s
+        FROM %s, %s
+        WHERE %s.content_type_id = %%s
+          AND %s.tag_id IN (%s)
+          AND %s = %s.object_id
+        GROUP BY %s
+        HAVING COUNT(%s) = %%s""" % (
+            model_pk,
+            model_table, rel_table,
+            rel_table,
+            rel_table, ','.join(['%s'] * tag_count),
+            model_pk, rel_table,
+            model_pk,
+            model_pk
+        )
+        ctype = ContentType.objects.get_for_model(Model)
+        cursor = connection.cursor()
+        cursor.execute(query,
+                       [ctype.id] + [tag.id for tag in tags] + [tag_count])
+        try:
+            ids = cursor.fetchall()[0]
+        except IndexError:
+            ids = []
+        return Model.objects.filter(pk__in=ids)
 
 class TaggedItem(models.Model):
     tag = models.ForeignKey(Tag, related_name='items')
