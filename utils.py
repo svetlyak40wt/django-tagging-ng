@@ -4,7 +4,7 @@ import re
 if not hasattr(__builtins__, 'set'):
     from sets import Set as set
 
-split_tag_re = re.compile('[\s,]+')
+find_tag_re = re.compile('[-\w]+')
 
 class DummyTag:
     def __init__(self, name):
@@ -24,22 +24,21 @@ def create_dummy_tags(tag_list):
     tag_names = set(split_tag_list(tag_list))
     return [DummyTag(tag_name) for tag_name in tag_names]
 
-def split_tag_list(tag_list):
+def get_tag_name_list(tag_names):
     """
-    Split the given list of tags on whitespace and commas and return
-    a list of tags.
+    Find tag names in the given string and return them as a list.
 
-    >>> split_tag_list(None)
+    >>> get_tag_name_list(None)
     []
-    >>> split_tag_list('')
+    >>> get_tag_name_list('')
     []
-    >>> split_tag_list('foo')
+    >>> get_tag_name_list('foo')
     ['foo']
-    >>> split_tag_list('foo bar')
+    >>> get_tag_name_list('foo bar')
     ['foo', 'bar']
-    >>> split_tag_list('foo,bar')
+    >>> get_tag_name_list('foo,bar')
     ['foo', 'bar']
-    >>> split_tag_list(',  , foo   ,   bar ,  ,baz, , ,')
+    >>> get_tag_name_list(',  , foo   ,   bar ,  ,baz, , ,')
     ['foo', 'bar', 'baz']
     """
-    return [t for t in split_tag_re.split(tag_list or '') if t]
+    return find_tag_re.findall(tag_names or '')

@@ -5,21 +5,21 @@ import math
 from django.db import backend, connection, models
 from django.db.models.query import QuerySet
 from django.contrib.contenttypes.models import ContentType
-from tagging.utils import split_tag_list
+from tagging.utils import get_tag_name_list
 
 # Python 2.3 compatibility
 if not hasattr(__builtins__, 'set'):
     from sets import Set as set
 
 class TagManager(models.Manager):
-    def update_tags(self, obj, tag_list):
+    def update_tags(self, obj, tag_names):
         """
         Update tags associated with an object.
         """
         ctype = ContentType.objects.get_for_model(obj)
         current_tags = list(self.filter(items__content_type__pk=ctype.id,
                                         items__object_id=obj.id))
-        updated_tag_names = set(split_tag_list(tag_list))
+        updated_tag_names = set(get_tag_name_list(tag_names))
 
         # Remove tags which no longer apply
         tags_for_removal = [tag for tag in current_tags \
@@ -45,7 +45,7 @@ class TagManager(models.Manager):
         return self.filter(items__content_type__pk=ctype.id,
                            items__object_id=obj.id)
 
-    def usage_for_model(self, Model, counts=True):
+    def usage_for_model(self, Model, counts=False):
         """
         Create a queryset matching all tags associated with instances
         of the given Model.
@@ -142,7 +142,7 @@ class TaggedItemManager(models.Manager):
         Create a queryset matching instances of the given Model
         associated with all the given list of Tags.
 
-        FIXME The query currently used to grabs the ids of objects
+        FIXME The query currently used to grab the ids of objects
               which have all the tags should be all that we need run,
               using a non-explicit join for the QuerySet returned, as
               in get_by_model, but there's currently no way to get the
