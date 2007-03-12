@@ -10,6 +10,17 @@ retrieval of tags simple.
 Installation
 ============
 
+Google Code recommends doing the Subversion checkout like so::
+
+    svn checkout http://django-tagging.googlecode.com/svn/trunk/ django-tagging
+
+But the hyphen in the application name can cause issues installing
+into a DB, so it's really better to do this::
+
+    svn checkout http://django-tagging.googlecode.com/svn/trunk/ tagging
+
+If you've already downloaded, rename the directory before installing.
+
 To install django-tagging, do the following:
 
     1. Put ``'tagging'`` in your ``INSTALLED_APPS`` setting.
