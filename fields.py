@@ -22,12 +22,12 @@ class TagField(CharField):
 
         # Make this object the descriptor for field access.
         setattr(cls, self.name, self)
-        
+
         # Listen to object's save() methods and check for save-deferred tags.
         dispatcher.connect(self._post_save_callback, signals.post_save, sender=cls)
 
-        # Make sure to clean up the TaggedItems after the object is deleted.
-        dispatcher.connect(self.__delete__, signal=signals.post_delete, sender=cls)
+        # Make sure to clean up the TaggedItems before the object is deleted.
+        dispatcher.connect(self.__delete__, signal=signals.pre_delete, sender=cls)
 
     def __get__(self, instance, owner=None):
         """
@@ -63,27 +63,24 @@ class TagField(CharField):
         """
         if instance is None:
             raise AttributeError("%s can only be set on instances." % self.name)
-            
+
         # If the object hasn't been saved yet, defer tag saving.
         if instance._get_pk_val() is None:
             setattr(instance, "__%s_save_defered_tags" % self.name, value)
         else:
             Tag.objects.update_tags(instance, value)
-        
+
     def __delete__(self, instance):
         """
         Clear all of an object's tags.
         """
         if instance is None:
             raise AttributeError("%s can only be cleared on instances." % self.name)
-        if instance._get_pk_val() is None:
-            delattr(instance, "__%s_save_defered_tags" % self.name)
-        else:
-            Tag.objects.update_tags(instance, "")
+        Tag.objects.update_tags(instance, "")
 
     def get_internal_type(self):
         return "CharField"
-        
+
     def _post_save_callback(self, signal, sender, instance):
         """
         Nasty hack to allow setting tags on unsaved items.
