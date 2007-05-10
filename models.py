@@ -7,6 +7,12 @@ from django.db.models.query import QuerySet
 from django.contrib.contenttypes.models import ContentType
 from tagging.utils import get_tag_name_list
 
+# Generic relations were moved in Django revision 5172
+try:
+    from django.contrib.contenttypes import generic
+except ImportError:
+    import django.db.models as generic
+
 # Python 2.3 compatibility
 if not hasattr(__builtins__, 'set'):
     from sets import Set as set
@@ -204,7 +210,7 @@ class TaggedItem(models.Model):
     tag = models.ForeignKey(Tag, related_name='items')
     content_type = models.ForeignKey(ContentType)
     object_id = models.PositiveIntegerField()
-    object = models.GenericForeignKey('content_type', 'object_id')
+    object = generic.GenericForeignKey('content_type', 'object_id')
 
     objects = TaggedItemManager()
 
