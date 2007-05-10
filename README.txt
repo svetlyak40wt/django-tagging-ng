@@ -23,8 +23,9 @@ If you've already downloaded, rename the directory before installing.
 
 To install django-tagging, do the following:
 
-    1. Put ``'tagging'`` in your ``INSTALLED_APPS`` setting.
-    2. Run the command ``manage.py syncdb``.
+    1. Put the ``tagging`` folder somewhere on your Python path.
+    2. Put ``'tagging'`` in your ``INSTALLED_APPS`` setting.
+    3. Run the command ``manage.py syncdb``.
 
 The ``syncdb`` command creates the necessary database tables and
 creates permission objects for all installed apps that need them.
