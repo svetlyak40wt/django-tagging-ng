@@ -69,8 +69,22 @@ class TagManager(models.Manager):
 
     def cloud_for_model(self, Model, steps=4):
         """
-        Add a ``font_size`` attribute to each tag returned according
-        to the frequency of its use for the given Model.
+        Obtain a list of tags associated with instances of the given
+        Model, giving each tag a ``count`` attribute indicating how
+        many times it has been used and a ``font_size`` attribute for
+        use in displaying a tag cloud.
+
+        ``steps`` defines the range of font sizes - ``font_size`` will
+        be an integer between 1 and ``steps`` (inclusive).
+        """
+        tags = list(self.usage_for_model(Model, counts=True))
+        return self.calculate_cloud(tags, steps)
+
+    def calculate_cloud(self, tags, steps=4):
+        """
+        Add a ``font_size`` attribute to each tag according to the
+        frequency of its use, as indicated by its ``count``
+        attribute.
 
         ``steps`` defines the range of font sizes - ``font_size`` will
         be an integer between 1 and ``steps`` (inclusive).
@@ -78,7 +92,6 @@ class TagManager(models.Manager):
         The log based tag cloud calculation used is from
         http://www.car-chase.net/2007/jan/16/log-based-tag-clouds-python/
         """
-        tags = list(self.usage_for_model(Model, counts=True))
         if len(tags) > 0:
             new_thresholds, results = [], []
             temp = [tag.count for tag in tags]
