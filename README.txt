@@ -88,6 +88,13 @@ functions:
       ``font_size`` may be an integer between ``1`` and ``steps``,
       inclusive.
 
+    * ``calculate_cloud(tags, steps=4)`` -- Adds a ``font_size``
+      attribute to each tag given according to the frequency of its
+      use, as indicated by its ``count`` attribute.
+
+      ``steps`` defines the range of font sizes - ``font_size`` will
+      be an integer between 1 and ``steps`` (inclusive).
+
       The algorithm used to calculate font sizes is from a blog post
       by Chase Davis, `Log-based tag clouds in Python`_.
 
