@@ -5,25 +5,26 @@ from tagging.models import Tag, TaggedItem
 register = Library()
 
 class TagsForObjectNode(Node):
-    def __init__(self, object, context_var):
-        self.object = object
+    def __init__(self, obj, context_var):
+        self.obj = obj
         self.context_var = context_var
 
     def render(self, context):
-        self.object = resolve_variable(self.object, context)
-        context[self.context_var] = Tag.objects.get_for_object(self.object)
+        obj = resolve_variable(self.obj, context)
+        context[self.context_var] = Tag.objects.get_for_object(obj)
         return ''
 
 class TaggedObjectsNode(Node):
     def __init__(self, tag, model, context_var):
         self.tag = tag
         self.context_var = context_var
-        self.model = get_model(*model.split('.'))
+        self.model = model
 
     def render(self, context):
-        self.tag = resolve_variable(self.tag, context)
-        context[self.context_var] = TaggedItem.objects.get_by_model(self.model,
-                                                                    self.tag)
+        tag = resolve_variable(self.tag, context)
+        model = get_model(*self.model.split('.'))
+        context[self.context_var] = TaggedItem.objects.get_by_model(model,
+                                                                    tag)
         return ''
 
 def do_tags_for_object(parser, token):
