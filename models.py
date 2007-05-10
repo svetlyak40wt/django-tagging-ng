@@ -201,7 +201,7 @@ class TaggedItemManager(models.Manager):
         cursor.execute(query,
                        [ctype.id] + [tag.id for tag in tags] + [tag_count])
         try:
-            ids = cursor.fetchall()[0]
+            ids = [row[0] for row in cursor.fetchall()]
         except IndexError:
             ids = []
         return Model.objects.filter(pk__in=ids)
