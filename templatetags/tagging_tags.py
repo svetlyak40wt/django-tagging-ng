@@ -58,7 +58,7 @@ def do_tagged_objects(parser, token):
     bits = token.contents.split()
     if len(bits) != 6:
         raise TemplateSyntaxError('%s tag requires exactly five arguments' % bits[0])
-    if bits[2] != 'for':
+    if bits[2] != 'in':
         raise TemplateSyntaxError("second argument to %s tag must be 'in'" % bits[0])
     if bits[4] != 'as':
         raise TemplateSyntaxError("fourth argument to %s tag must be 'as'" % bits[0])
