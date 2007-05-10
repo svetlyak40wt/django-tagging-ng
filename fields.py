@@ -10,7 +10,6 @@ class TagField(CharField):
     "under the hood". This exposes a space-separated string of tags, but does
     the splitting/reordering/etc. under the hood.
     """
-
     def __init__(self, **kwargs):
         kwargs["maxlength"] = kwargs.get("maxlength", 255)
         kwargs["blank"] = kwargs.get("blank", True)
@@ -23,11 +22,8 @@ class TagField(CharField):
         # Make this object the descriptor for field access.
         setattr(cls, self.name, self)
 
-        # Listen to object's save() methods and check for save-deferred tags.
-        dispatcher.connect(self._post_save_callback, signals.post_save, sender=cls)
-
-        # Make sure to clean up the TaggedItems before the object is deleted.
-        dispatcher.connect(self.__delete__, signal=signals.pre_delete, sender=cls)
+        # Save tags back to the database post-save
+        dispatcher.connect(self._save, signal=signals.post_save, sender=cls)
 
     def __get__(self, instance, owner=None):
         """
@@ -48,14 +44,17 @@ class TagField(CharField):
             "tag1 tag2 tag3 tag4"
 
         """
-        # If the object hasn't been saved yet, return save-deferred tags.
-        if instance._get_pk_val() is None:
-            return getattr(instance, "__%s_save_defered_tags" % self.name, "")
-        elif instance is not None:
-            tags = Tag.objects.get_for_object(instance)
-        else:
-            tags = Tag.objects.usage_for_model(type(instance))
-        return " ".join(map(str, tags))
+        # Handle access on the model (i.e. Link.tags)
+        if instance is None:
+            return tags2str(Tag.objects.usage_for_model(owner))
+
+        tags = self._get_instance_tag_cache(instance)
+        if tags is None:
+            if instance._get_pk_val() is None:
+                self._set_instance_tag_cache(instance, "")
+            else:
+                self._set_instance_tag_cache(instance, tags2str(Tag.objects.get_for_object(instance)))
+        return self._get_instance_tag_cache(instance)
 
     def __set__(self, instance, value):
         """
@@ -63,26 +62,37 @@ class TagField(CharField):
         """
         if instance is None:
             raise AttributeError("%s can only be set on instances." % self.name)
+        self._set_instance_tag_cache(instance, value)
 
-        # If the object hasn't been saved yet, defer tag saving.
-        if instance._get_pk_val() is None:
-            setattr(instance, "__%s_save_defered_tags" % self.name, value)
-        else:
-            Tag.objects.update_tags(instance, value)
+    def _save(self, signal, sender, instance):
+        """
+        Save tags back to the database
+        """
+        tags = self._get_instance_tag_cache(instance)
+        if tags is not None :
+            Tag.objects.update_tags(instance, tags)
 
     def __delete__(self, instance):
         """
         Clear all of an object's tags.
         """
-        if instance is None:
-            raise AttributeError("%s can only be cleared on instances." % self.name)
-        Tag.objects.update_tags(instance, "")
+        self._set_instance_tag_cache(instance, "")
+
+    def _get_instance_tag_cache(self, instance):
+        """
+        Helper: get an instance's tag cache.
+        """
+        return getattr(instance, "_%s_cache" % self.attname, None)
+
+    def _set_instance_tag_cache(self, instance, tags):
+        """
+        Helper: set and instance's tag cache.
+        """
+        setattr(instance, "_%s_cache" % self.attname, tags)
 
     def get_internal_type(self):
         return "CharField"
 
-    def _post_save_callback(self, signal, sender, instance):
-        """
-        Nasty hack to allow setting tags on unsaved items.
-        """
-        Tag.objects.update_tags(instance, getattr(instance, "__%s_save_defered_tags" % self.name, ""))
+# Helper
+def tags2str(tagset):
+    return " ".join(t.name for t in tagset)
