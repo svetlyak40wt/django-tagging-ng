@@ -1,10 +1,11 @@
 import re
+from django.conf import settings
 
 # Python 2.3 compatibility
 if not hasattr(__builtins__, 'set'):
     from sets import Set as set
 
-find_tag_re = re.compile('[-\w]+')
+find_tag_re = re.compile('[-\w]+', re.U)
 
 class DummyTag:
     def __init__(self, name):
@@ -41,4 +42,7 @@ def get_tag_name_list(tag_names):
     >>> get_tag_name_list(',  , foo   ,   bar ,  ,baz, , ,')
     ['foo', 'bar', 'baz']
     """
-    return find_tag_re.findall(tag_names or '')
+    if not isinstance(tag_names, unicode) and tag_names is not None:
+        tag_names = tag_names.decode(settings.DEFAULT_CHARSET)
+    results = find_tag_re.findall(tag_names or '')
+    return [item.encode(settings.DEFAULT_CHARSET) for item in results]

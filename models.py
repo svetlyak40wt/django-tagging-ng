@@ -6,6 +6,7 @@ from django.db import backend, connection, models
 from django.db.models.query import QuerySet
 from django.contrib.contenttypes.models import ContentType
 from tagging.utils import get_tag_name_list
+from tagging.validators import isTag
 
 # Generic relations were moved in Django revision 5172
 try:
@@ -115,7 +116,7 @@ class TagManager(models.Manager):
         return tags
 
 class Tag(models.Model):
-    name = models.SlugField(maxlength=50, unique=True)
+    name = models.CharField(maxlength=50, unique=True, validator_list=[isTag])
 
     objects = TagManager()
 
