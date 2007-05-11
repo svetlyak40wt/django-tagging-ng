@@ -318,8 +318,26 @@ template tags which may be used to work with tags.
 Tag reference
 -------------
 
-tag_for_object
-~~~~~~~~~~~~~~~~
+tags_for_model
+~~~~~~~~~~~~~~
+
+Retrieves a list of tags associated with the given model and stores
+them in a context variable.
+
+The model is specified in ``[appname].[modelname]`` format.
+
+If specified - by providing extra ``with counts`` arguments - adds a
+``count`` attribute to each tag containing the number of instances of
+the given model which have been tagged with it.
+
+Example usage::
+
+    {% tags_for_model products.Widget as widget_tags %}
+
+    {% tags_for_model products.Widget as widget_tags with counts %}
+
+tags_for_object
+~~~~~~~~~~~~~~~
 
 Retrieves a list of tags associated with an object and stores them in
 a context variable.
