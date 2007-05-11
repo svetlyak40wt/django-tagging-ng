@@ -116,7 +116,7 @@ class TagManager(models.Manager):
         return tags
 
 class Tag(models.Model):
-    name = models.CharField(maxlength=50, unique=True, validator_list=[isTag])
+    name = models.CharField(maxlength=50, unique=True, db_index=True, validator_list=[isTag])
 
     objects = TagManager()
 
