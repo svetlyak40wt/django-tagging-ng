@@ -4,6 +4,17 @@ from tagging.models import Tag, TaggedItem
 
 register = Library()
 
+class TagsForModelNode(Node):
+    def __init__(self, model, context_var, counts):
+        self.model = model
+        self.context_var = context_var
+        self.counts = counts
+
+    def render(self, context):
+        model = get_model(*self.model.split('.'))
+        context[self.context_var] = Tag.objects.usage_for_model(model, counts=self.counts)
+        return ''
+
 class TagsForObjectNode(Node):
     def __init__(self, obj, context_var):
         self.obj = obj
@@ -27,9 +38,42 @@ class TaggedObjectsNode(Node):
                                                                     tag)
         return ''
 
+def do_tags_for_model(parser, token):
+    """
+    Retrieves a list of ``Tag`` objects associated with a given model
+    and stores them in a context variable.
+
+    The model is specified in ``[appname].[modelname]`` format.
+
+    If specified - by providing extra ``with counts`` arguments - adds
+    a ``count`` attribute to each tag containing the number of
+    instances of the given model which have been tagged with it.
+
+    Example usage::
+
+        {% tags_for_model products.Widget as widget_tags %}
+
+        {% tags_for_model products.Widget as widget_tags with counts %}
+    """
+    bits = token.contents.split()
+    len_bits = len(bits)
+    if len_bits not in (4, 6):
+        raise TemplateSyntaxError('%s tag requires either three or five arguments' % bits[0])
+    if bits[2] != 'as':
+        raise TemplateSyntaxError("second argument to %s tag must be 'as'" % bits[0])
+    if len_bits == 6:
+        if bits[4] != 'with':
+            raise TemplateSyntaxError("if given, fourth argument to %s tag must be 'with'" % bits[0])
+        if bits[5] != 'counts':
+            raise TemplateSyntaxError("if given, fifth argument to %s tag must be 'counts'" % bits[0])
+    if len_bits == 4:
+        return TagsForModelNode(bits[1], bits[3], counts=False)
+    else:
+        return TagsForModelNode(bits[1], bits[3], counts=True)
+
 def do_tags_for_object(parser, token):
     """
-    Retrieves a list of Tag objects associated with an object and
+    Retrieves a list of ``Tag`` objects associated with an object and
     stores them in a context variable.
 
     Example usage::
@@ -65,5 +109,6 @@ def do_tagged_objects(parser, token):
         raise TemplateSyntaxError("fourth argument to %s tag must be 'as'" % bits[0])
     return TaggedObjectsNode(bits[1], bits[3], bits[5])
 
+register.tag('tags_for_model', do_tags_for_model)
 register.tag('tags_for_object', do_tags_for_object)
 register.tag('tagged_objects', do_tagged_objects)
