@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 r"""
 >>> from tagging.models import Tag, TaggedItem
 >>> from tagging.tests.models import Parrot
@@ -15,6 +16,13 @@ r"""
 >>> Tag.objects.update_tags(dead, 'foo bar baz')
 >>> Tag.objects.get_for_object(dead)
 [<Tag: bar>, <Tag: baz>, <Tag: foo>]
+
+# Note that doctest in Python 2.4 (and maybe 2.5?) doesn't support non-ascii
+# characters in output, so we're displaying the repr() here.
+>>> Tag.objects.update_tags(dead, 'ŠĐĆŽćžšđ')
+>>> repr(Tag.objects.get_for_object(dead))
+'[<Tag: \xc5\xa0\xc4\x90\xc4\x86\xc5\xbd\xc4\x87\xc5\xbe\xc5\xa1\xc4\x91>]'
+
 >>> Tag.objects.update_tags(dead, None)
 >>> Tag.objects.get_for_object(dead)
 []
