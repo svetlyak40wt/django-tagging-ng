@@ -207,6 +207,48 @@ class TaggedItemManager(models.Manager):
             ids = []
         return Model.objects.filter(pk__in=ids)
 
+    def get_related(self, obj, Model, num=None):
+        """
+        Retrieve instances of ``Model`` which share tags with the
+        model instance ``obj``, ordered by the number of shared tags
+        in descending order.
+
+        If ``num`` is given, a maximum of ``num`` instances will be
+        returned.
+        """
+        ctype = ContentType.objects.get_for_model(obj)
+        related_ctype = ContentType.objects.get_for_model(Model)
+        related_table = backend.quote_name(Model._meta.db_table)
+        query = """
+        SELECT %s.id, COUNT(related_tagged_item.object_id) AS count
+        FROM %s, tagged_item, tag, tagged_item related_tagged_item
+        WHERE tagged_item.object_id = %s
+          AND tagged_item.content_type_id =  %s
+          AND tag.id = tagged_item.tag_id
+          AND related_tagged_item.content_type_id = %s
+          AND related_tagged_item.tag_id = tagged_item.tag_id
+          AND %s.id = related_tagged_item.object_id""" % (
+              related_table, related_table, obj.id, ctype.id, related_ctype.id, related_table
+        )
+        if ctype.id == related_ctype.id:
+            query += """
+            AND related_tagged_item.object_id != tagged_item.object_id"""
+        query += """
+        GROUP BY related_tagged_item.object_id
+        ORDER BY count DESC"""
+
+        cursor = connection.cursor()
+        cursor.execute(query, [])
+        if num is not None:
+            object_ids = [row[0] for row in cursor.fetchall()[:num]]
+        else:
+            object_ids = [row[0] for row in cursor.fetchall()]
+
+        # Use in_bulk here instead of an id__in lookup, because id__in would
+        # clobber the ordering.
+        object_dict = Model._default_manager.in_bulk(object_ids)
+        return [object_dict[object_id] for object_id in object_ids]
+
 class TaggedItem(models.Model):
     tag = models.ForeignKey(Tag, related_name='items')
     content_type = models.ForeignKey(ContentType)

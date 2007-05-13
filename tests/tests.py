@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 r"""
 >>> from tagging.models import Tag, TaggedItem
->>> from tagging.tests.models import Parrot
+>>> from tagging.tests.models import Article, Link, Parrot
 
 ###########
 # Tagging #
@@ -64,4 +64,30 @@ r"""
 [<Parrot: pining for the fjords>]
 >>> TaggedItem.objects.get_by_model(Parrot, Tag.objects.filter(name__in=['bar', 'ter']))
 [<Parrot: late>, <Parrot: passed on>]
+
+# Retrieving related objects by Model #########################################
+
+# Related instances of the same Model
+>>> l1 = Link.objects.create(name='link 1')
+>>> Tag.objects.update_tags(l1, 'tag1 tag2 tag3 tag4 tag5')
+>>> l2 = Link.objects.create(name='link 2')
+>>> Tag.objects.update_tags(l2, 'tag1 tag2 tag3')
+>>> l3 = Link.objects.create(name='link 3')
+>>> Tag.objects.update_tags(l3, 'tag1')
+>>> l4 = Link.objects.create(name='link 4')
+>>> TaggedItem.objects.get_related(l1, Link)
+[<Link: link 2>, <Link: link 3>]
+>>> TaggedItem.objects.get_related(l1, Link, num=1)
+[<Link: link 2>]
+>>> TaggedItem.objects.get_related(l4, Link)
+[]
+
+# Related instance of a different Model
+>>> a1 = Article.objects.create(name='article 1')
+>>> Tag.objects.update_tags(a1, 'tag1 tag2 tag3 tag4')
+>>> TaggedItem.objects.get_related(a1, Link)
+[<Link: link 1>, <Link: link 2>, <Link: link 3>]
+>>> Tag.objects.update_tags(a1, 'tag6')
+>>> TaggedItem.objects.get_related(a1, Link)
+[]
 """

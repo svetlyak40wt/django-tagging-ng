@@ -195,6 +195,13 @@ helper functions:
       you pass it a list, so it's recommended that you use
       ``get_by_model`` instead of calling this function directly.
 
+    * ``get_related(obj, Model, num=None)`` - Returns instances of
+       ``Model`` which share tags with the model instance ``obj``,
+       ordered by the number of shared tags in descending order.
+
+       If ``num`` is given, a maximum of ``num`` instances will be
+       returned.
+
 Basic usage
 -----------
 
