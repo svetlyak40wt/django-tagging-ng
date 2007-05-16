@@ -70,7 +70,7 @@ functions:
     * ``get_for_object(obj)`` -- Returns a ``QuerySet`` containing all
       ``Tag`` objects associated with ``obj``.
 
-    * ``usage_for_model(Model, counts=True)`` -- Returns a
+    * ``usage_for_model(Model, counts=False)`` -- Returns a
       ``QuerySet`` containing the distinct ``Tag`` objects associated
       with all instances of model ``Model``.
 
