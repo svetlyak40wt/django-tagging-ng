@@ -74,6 +74,52 @@ class TagManager(models.Manager):
             )
         return qs
 
+    def related_for_model(self, tags, Model, counts=False):
+        """
+        Obtain a list of tags related to a given list of tags - that
+        is, other tags used by items which have all the given tags.
+
+        If ``counts`` is True, a ``count`` attribute will be added to
+        each tag, indicating the number of items which have it in
+        addition to the given list of tags.
+        """
+        tags = list(tags)
+        ctype = ContentType.objects.get_for_model(Model)
+        count_select = ''
+        if counts is True:
+            count_select = ', COUNT(ti.object_id)'
+        query = """
+        SELECT t.id, t.name%s
+        FROM tagged_item ti INNER JOIN tag t ON ti.tag_id = t.id
+        WHERE ti.content_type_id = %s
+          AND ti.object_id IN
+          (
+              SELECT tagged_item.object_id
+              FROM tagged_item, tag
+              WHERE tagged_item.content_type_id = %s
+                AND tag.id = tagged_item.tag_id
+                AND tag.id IN (%s)
+              GROUP BY tagged_item.object_id
+              HAVING COUNT(tagged_item.object_id) = %s
+          )
+          AND t.id NOT IN (%s)
+        GROUP BY t.id
+        ORDER BY 2 ASC""" % (
+            count_select, ctype.id,
+            ctype.id, ','.join(['%s'] * len(tags)), len(tags),
+            ','.join(['%s'] * len(tags))
+        )
+
+        cursor = connection.cursor()
+        cursor.execute(query, [tag.id for tag in tags] * 2)
+        tags = []
+        for row in cursor.fetchall():
+            t = Tag(*row[:2])
+            if counts is True:
+                t.count = row[2]
+            tags.append(t)
+        return tags
+
     def cloud_for_model(self, Model, steps=4):
         """
         Obtain a list of tags associated with instances of the given
