@@ -83,11 +83,11 @@ class TagManager(models.Manager):
         each tag, indicating the number of items which have it in
         addition to the given list of tags.
         """
-        tags = list(tags)
         ctype = ContentType.objects.get_for_model(Model)
         count_select = ''
         if counts is True:
             count_select = ', COUNT(ti.object_id)'
+        tag_count = len(tags)
         query = """
         SELECT t.id, t.name%s
         FROM tagged_item ti INNER JOIN tag t ON ti.tag_id = t.id
@@ -106,19 +106,19 @@ class TagManager(models.Manager):
         GROUP BY t.id
         ORDER BY 2 ASC""" % (
             count_select, ctype.id,
-            ctype.id, ','.join(['%s'] * len(tags)), len(tags),
-            ','.join(['%s'] * len(tags))
+            ctype.id, ','.join(['%s'] * tag_count), tag_count,
+            ','.join(['%s'] * tag_count)
         )
 
         cursor = connection.cursor()
         cursor.execute(query, [tag.id for tag in tags] * 2)
-        tags = []
+        related = []
         for row in cursor.fetchall():
-            t = Tag(*row[:2])
+            tag = Tag(*row[:2])
             if counts is True:
-                t.count = row[2]
-            tags.append(t)
-        return tags
+                tag.count = row[2]
+            related.append(tag)
+        return related
 
     def cloud_for_model(self, Model, steps=4):
         """
