@@ -28,19 +28,6 @@ def create_dummy_tags(tag_list):
 def get_tag_name_list(tag_names):
     """
     Find tag names in the given string and return them as a list.
-
-    >>> get_tag_name_list(None)
-    []
-    >>> get_tag_name_list('')
-    []
-    >>> get_tag_name_list('foo')
-    ['foo']
-    >>> get_tag_name_list('foo bar')
-    ['foo', 'bar']
-    >>> get_tag_name_list('foo,bar')
-    ['foo', 'bar']
-    >>> get_tag_name_list(',  , foo   ,   bar ,  ,baz, , ,')
-    ['foo', 'bar', 'baz']
     """
     if not isinstance(tag_names, unicode) and tag_names is not None:
         tag_names = tag_names.decode(settings.DEFAULT_CHARSET)

@@ -11,32 +11,6 @@ def isTagList(field_data, all_data):
     Validates that ``field_data`` is a valid list of tag names,
     separated by a single comma, a single space or a comma followed
     by a space.
-
-    >>> isTagList('foo', {})
-    >>> isTagList('foo bar baz', {})
-    >>> isTagList('foo,bar,baz', {})
-    >>> isTagList('foo, bar, baz', {})
-    >>> isTagList('foo qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvb bar', {})
-    >>> isTagList('', {})
-    Traceback (most recent call last):
-        ...
-    ValidationError: ['Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens, with a comma, space or comma followed by space used to separate each tag name.']
-    >>> isTagList(' foo', {})
-    Traceback (most recent call last):
-        ...
-    ValidationError: ['Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens, with a comma, space or comma followed by space used to separate each tag name.']
-    >>> isTagList('foo ', {})
-    Traceback (most recent call last):
-        ...
-    ValidationError: ['Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens, with a comma, space or comma followed by space used to separate each tag name.']
-    >>> isTagList('foo  bar', {})
-    Traceback (most recent call last):
-        ...
-    ValidationError: ['Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens, with a comma, space or comma followed by space used to separate each tag name.']
-    >>> isTagList('foo qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbn bar', {})
-    Traceback (most recent call last):
-        ...
-    ValidationError: ['Tag names must be no longer than 50 characters.']
     """
     if not isinstance(field_data, unicode):
         field_data = field_data.decode(settings.DEFAULT_CHARSET)

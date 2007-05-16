@@ -3,6 +3,63 @@ r"""
 >>> from tagging.models import Tag, TaggedItem
 >>> from tagging.tests.models import Article, Link, Parrot
 
+#############
+# Utilities #
+#############
+
+>>> from tagging.utils import get_tag_name_list
+>>> get_tag_name_list(None)
+[]
+>>> get_tag_name_list('')
+[]
+>>> get_tag_name_list('foo')
+['foo']
+>>> get_tag_name_list('foo bar')
+['foo', 'bar']
+>>> get_tag_name_list('foo,bar')
+['foo', 'bar']
+>>> get_tag_name_list(',  , foo   ,   bar ,  ,baz, , ,')
+['foo', 'bar', 'baz']
+>>> get_tag_name_list('foo,ŠĐĆŽćžšđ')
+['foo', '\xc5\xa0\xc4\x90\xc4\x86\xc5\xbd\xc4\x87\xc5\xbe\xc5\xa1\xc4\x91']
+
+##############
+# Validators #
+##############
+
+>>> from tagging.validators import isTagList, isTag
+>>> isTagList('foo', {})
+>>> isTagList('foo bar baz', {})
+>>> isTagList('foo,bar,baz', {})
+>>> isTagList('foo, bar, baz', {})
+>>> isTagList('foo qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvb bar', {})
+>>> isTagList('', {})
+Traceback (most recent call last):
+    ...
+ValidationError: ['Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens, with a comma, space or comma followed by space used to separate each tag name.']
+>>> isTagList(' foo', {})
+Traceback (most recent call last):
+    ...
+ValidationError: ['Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens, with a comma, space or comma followed by space used to separate each tag name.']
+>>> isTagList('foo ', {})
+Traceback (most recent call last):
+    ...
+ValidationError: ['Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens, with a comma, space or comma followed by space used to separate each tag name.']
+>>> isTagList('foo  bar', {})
+Traceback (most recent call last):
+    ...
+ValidationError: ['Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens, with a comma, space or comma followed by space used to separate each tag name.']
+>>> isTagList('foo qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbn bar', {})
+Traceback (most recent call last):
+    ...
+ValidationError: ['Tag names must be no longer than 50 characters.']
+>>> isTag('f-o_1o', {})
+>>> isTag('ŠĐĆŽćžšđ', {})
+>>> isTag('f o o', {})
+Traceback (most recent call last):
+    ...
+ValidationError: ['Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens.']
+
 ###########
 # Tagging #
 ###########
