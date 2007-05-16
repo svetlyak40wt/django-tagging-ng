@@ -38,6 +38,20 @@ r"""
 >>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_model(Parrot, counts=True)]
 [('bar', 3), ('baz', 1), ('foo', 2), ('ter', 3)]
 
+# Related tags
+>>> tags = Tag.objects.related_for_model(Tag.objects.filter(name__in=['bar']), Parrot, counts=True)
+>>> [(tag.name, tag.count) for tag in tags]
+[('baz', 1), ('foo', 1), ('ter', 2)]
+>>> tags = Tag.objects.related_for_model(Tag.objects.filter(name__in=['bar']), Parrot, counts=False)
+>>> [tag.name for tag in tags]
+['baz', 'foo', 'ter']
+>>> tags = Tag.objects.related_for_model(Tag.objects.filter(name__in=['bar', 'ter']), Parrot, counts=True)
+>>> [(tag.name, tag.count) for tag in tags]
+[('baz', 1)]
+>>> tags = Tag.objects.related_for_model(Tag.objects.filter(name__in=['bar', 'ter', 'baz']), Parrot, counts=True)
+>>> [(tag.name, tag.count) for tag in tags]
+[]
+
 # Retrieving tagged objects by Model ##########################################
 
 >>> foo = Tag.objects.get(name='foo')

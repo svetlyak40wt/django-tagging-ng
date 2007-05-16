@@ -78,6 +78,14 @@ functions:
       to each tag, indicating how many times it has been associated
       with all instances of ``Model``.
 
+    * ``related_for_model(tags, Model, counts=False)`` -- Returns a
+      list of tags related to a given list of tags - that is, other
+      tags used by items which have all the given tags.
+
+      If ``counts`` is True, a ``count`` attribute will be added to
+      each tag, indicating the number of items which have it in
+      addition to the given list of tags.
+
     * ``cloud_for_model(Model, steps=4)`` -- Returns a list of the
       distinct ``Tag`` objects associated with all instances of
       ``Model``, each having along a ``count`` attribute as above and
