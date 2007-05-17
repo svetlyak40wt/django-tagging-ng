@@ -16,7 +16,10 @@ def get_tag_name_list(tag_names):
     results = find_tag_re.findall(tag_names or '')
     return [item.encode(settings.DEFAULT_CHARSET) for item in results]
 
-def calculate_cloud(tags, steps=4):
+# Font size distribution algorithms
+LOGARITHMIC, LINEAR = 1, 2
+
+def calculate_cloud(tags, steps=4, distribution=LOGARITHMIC):
     """
     Add a ``font_size`` attribute to each tag according to the
     frequency of its use, as indicated by its ``count``
@@ -25,21 +28,34 @@ def calculate_cloud(tags, steps=4):
     ``steps`` defines the range of font sizes - ``font_size`` will
     be an integer between 1 and ``steps`` (inclusive).
 
-    The log based tag cloud calculation used is from
-    http://www.car-chase.net/2007/jan/16/log-based-tag-clouds-python/
+    ``distribution`` defines the type of font size distribution
+    algorithm which will be used - logarithmic or linear. It must be
+    either ``tagging.utils.LOGARITHMIC`` or ``tagging.utils.LINEAR``.
+
+    The algorithm to scale the tags logarithmically is from a
+    blog post by Anders Pearson, 'Scaling tag clouds':
+    http://thraxil.com/users/anders/posts/2005/12/13/scaling-tag-clouds/
     """
     if len(tags) > 0:
-        new_thresholds, results = [], []
-        temp = [tag.count for tag in tags]
-        max_weight = float(max(temp))
-        min_weight = float(min(temp))
-        new_delta = (max_weight - min_weight)/float(steps)
-        for i in range(steps + 1):
-            new_thresholds.append((100 * math.log((min_weight + i * new_delta) + 2), i))
+        thresholds = []
+        counts = [tag.count for tag in tags]
+        max_weight = float(max(counts))
+        min_weight = float(min(counts))
+
+        # Set up the appropriate thresholds
+        if distribution == LOGARITHMIC:
+            thresholds = [math.pow(max_weight - min_weight + 1, float(i) / float(steps)) \
+                          for i in range(1, steps + 1)]
+        elif distribution == LINEAR:
+            delta = (max_weight - min_weight) / float(steps)
+            thresholds = [min_weight + i * delta for i in range(1, steps + 1)]
+        else:
+            raise ValueError('Invalid font size distribution algorithm specified: %s' % distribution)
+
         for tag in tags:
             font_set = False
-            for threshold in new_thresholds[1:int(steps)+1]:
-                if (100 * math.log(tag.count + 2)) <= threshold[0] and not font_set:
-                    tag.font_size = threshold[1]
+            for i in range(steps):
+                if not font_set and tag.count <= thresholds[i]:
+                    tag.font_size = i + 1
                     font_set = True
     return tags

@@ -4,7 +4,7 @@ Models for generic tagging.
 from django.db import backend, connection, models
 from django.db.models.query import QuerySet
 from django.contrib.contenttypes.models import ContentType
-from tagging.utils import calculate_cloud, get_tag_name_list
+from tagging.utils import calculate_cloud, get_tag_name_list, LOGARITHMIC
 from tagging.validators import isTag
 
 # Generic relations were moved in Django revision 5172
@@ -119,7 +119,7 @@ class TagManager(models.Manager):
             related.append(tag)
         return related
 
-    def cloud_for_model(self, Model, steps=4):
+    def cloud_for_model(self, Model, steps=4, distribution=LOGARITHMIC):
         """
         Obtain a list of tags associated with instances of the given
         Model, giving each tag a ``count`` attribute indicating how
@@ -128,6 +128,11 @@ class TagManager(models.Manager):
 
         ``steps`` defines the range of font sizes - ``font_size`` will
         be an integer between 1 and ``steps`` (inclusive).
+
+        ``distribution`` defines the type of font size distribution
+        algorithm which will be used - logarithmic or linear. It must
+        be either ``tagging.utils.LOGARITHMIC`` or
+        ``tagging.utils.LINEAR``.
         """
         tags = list(self.usage_for_model(Model, counts=True))
         return calculate_cloud(tags, steps)
