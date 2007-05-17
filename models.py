@@ -1,11 +1,10 @@
 """
 Models for generic tagging.
 """
-import math
 from django.db import backend, connection, models
 from django.db.models.query import QuerySet
 from django.contrib.contenttypes.models import ContentType
-from tagging.utils import get_tag_name_list
+from tagging.utils import calculate_cloud, get_tag_name_list
 from tagging.validators import isTag
 
 # Generic relations were moved in Django revision 5172
@@ -131,35 +130,7 @@ class TagManager(models.Manager):
         be an integer between 1 and ``steps`` (inclusive).
         """
         tags = list(self.usage_for_model(Model, counts=True))
-        return self.calculate_cloud(tags, steps)
-
-    def calculate_cloud(self, tags, steps=4):
-        """
-        Add a ``font_size`` attribute to each tag according to the
-        frequency of its use, as indicated by its ``count``
-        attribute.
-
-        ``steps`` defines the range of font sizes - ``font_size`` will
-        be an integer between 1 and ``steps`` (inclusive).
-
-        The log based tag cloud calculation used is from
-        http://www.car-chase.net/2007/jan/16/log-based-tag-clouds-python/
-        """
-        if len(tags) > 0:
-            new_thresholds, results = [], []
-            temp = [tag.count for tag in tags]
-            max_weight = float(max(temp))
-            min_weight = float(min(temp))
-            new_delta = (max_weight - min_weight)/float(steps)
-            for i in range(steps + 1):
-                new_thresholds.append((100 * math.log((min_weight + i * new_delta) + 2), i))
-            for tag in tags:
-                font_set = False
-                for threshold in new_thresholds[1:int(steps)+1]:
-                    if (100 * math.log(tag.count + 2)) <= threshold[0] and not font_set:
-                        tag.font_size = threshold[1]
-                        font_set = True
-        return tags
+        return calculate_cloud(tags, steps)
 
 class Tag(models.Model):
     name = models.CharField(maxlength=50, unique=True, db_index=True, validator_list=[isTag])

@@ -82,8 +82,8 @@ functions:
       list of tags related to a given list of tags - that is, other
       tags used by items which have all the given tags.
 
-      If ``counts`` is True, a ``count`` attribute will be added to
-      each tag, indicating the number of items which have it in
+      If ``counts`` is ``True``, a ``count`` attribute will be added
+      to each tag, indicating the number of items which have it in
       addition to the given list of tags.
 
     * ``cloud_for_model(Model, steps=4)`` -- Returns a list of the
@@ -95,18 +95,6 @@ functions:
       ``steps`` defines the number of font sizes available -
       ``font_size`` may be an integer between ``1`` and ``steps``,
       inclusive.
-
-    * ``calculate_cloud(tags, steps=4)`` -- Adds a ``font_size``
-      attribute to each tag given according to the frequency of its
-      use, as indicated by its ``count`` attribute.
-
-      ``steps`` defines the range of font sizes - ``font_size`` will
-      be an integer between 1 and ``steps`` (inclusive).
-
-      The algorithm used to calculate font sizes is from a blog post
-      by Chase Davis, `Log-based tag clouds in Python`_.
-
-      .. _`Log-based tag clouds in Python`: http://www.car-chase.net/2007/jan/16/log-based-tag-clouds-python/
 
 Basic usage
 -----------
@@ -237,6 +225,27 @@ You can also pass a ``QuerySet`` to ``get_by_model``::
     >>> tags = Tag.objects.filter(name__in=['house', 'thing'])
     >>> TaggedItem.objects.get_by_model(Widget, tags)
     [<Widget: pk=1>]
+
+
+Utilities
+=========
+
+Tag-related utility methods are defined in the ``tagging.utils``
+module:
+
+calculate_cloud(tags, steps=4)
+------------------------------
+
+Adds a ``font_size`` attribute to each tag given according to the
+frequency of its use, as indicated by its ``count`` attribute.
+
+``steps`` defines the range of font sizes - ``font_size`` will be an
+integer between 1 and ``steps`` (inclusive).
+
+The algorithm used to calculate font sizes is from a blog post by
+Chase Davis, `Log-based tag clouds in Python`_.
+
+.. _`Log-based tag clouds in Python`: http://www.car-chase.net/2007/jan/16/log-based-tag-clouds-python/
 
 
 Fields
