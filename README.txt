@@ -96,6 +96,11 @@ functions:
       ``font_size`` may be an integer between ``1`` and ``steps``,
       inclusive.
 
+      ``distribution`` defines the type of font size distribution
+      algorithm which will be used - logarithmic or linear. It must
+      be either ``tagging.utils.LOGARITHMIC`` or
+      ``tagging.utils.LINEAR``.
+
 Basic usage
 -----------
 
@@ -233,8 +238,8 @@ Utilities
 Tag-related utility methods are defined in the ``tagging.utils``
 module:
 
-calculate_cloud(tags, steps=4)
-------------------------------
+calculate_cloud(tags, steps=4, distribution=tagging.utils.LOGARITHMIC)
+----------------------------------------------------------------------
 
 Adds a ``font_size`` attribute to each tag given according to the
 frequency of its use, as indicated by its ``count`` attribute.
@@ -242,10 +247,14 @@ frequency of its use, as indicated by its ``count`` attribute.
 ``steps`` defines the range of font sizes - ``font_size`` will be an
 integer between 1 and ``steps`` (inclusive).
 
-The algorithm used to calculate font sizes is from a blog post by
-Chase Davis, `Log-based tag clouds in Python`_.
+``distribution`` defines the type of font size distribution algorithm
+which will be used - logarithmic or linear. It must be either
+``tagging.utils.LOGARITHMIC`` (default) or ``tagging.utils.LINEAR``.
 
-.. _`Log-based tag clouds in Python`: http://www.car-chase.net/2007/jan/16/log-based-tag-clouds-python/
+The algorithm to scale the tags logarithmically is from a blog post by
+Anders Pearson, `Scaling tag clouds`_.
+
+.. _`Scaling tag clouds`: http://thraxil.com/users/anders/posts/2005/12/13/scaling-tag-clouds/
 
 
 Fields

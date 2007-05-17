@@ -23,6 +23,37 @@ r"""
 >>> get_tag_name_list('foo,ŠĐĆŽćžšđ')
 ['foo', '\xc5\xa0\xc4\x90\xc4\x86\xc5\xbd\xc4\x87\xc5\xbe\xc5\xa1\xc4\x91']
 
+# Tag clouds ##################################################################
+>>> import os
+>>> from tagging.utils import calculate_cloud, LINEAR
+>>> tags = []
+>>> for line in open(os.path.join(os.path.dirname(__file__), 'tags.txt')).readlines():
+...     name, count = line.rstrip().split()
+...     tag = Tag(name=name)
+...     tag.count = int(count)
+...     tags.append(tag)
+
+>>> sizes = {}
+>>> for tag in calculate_cloud(tags, steps=5):
+...     sizes[tag.font_size] = sizes.get(tag.font_size, 0) + 1
+
+# This isn't a pre-calculated test, just making sure it's consistent
+>>> sizes
+{1: 48, 2: 20, 3: 24, 4: 19, 5: 11}
+
+>>> sizes = {}
+>>> for tag in calculate_cloud(tags, steps=5, distribution=LINEAR):
+...     sizes[tag.font_size] = sizes.get(tag.font_size, 0) + 1
+
+# This isn't a pre-calculated test, just making sure it's consistent
+>>> sizes
+{1: 97, 2: 12, 3: 7, 4: 2, 5: 4}
+
+>>> calculate_cloud(tags, steps=5, distribution='cheese')
+Traceback (most recent call last):
+    ...
+ValueError: Invalid font size distribution algorithm specified: cheese
+
 ##############
 # Validators #
 ##############
