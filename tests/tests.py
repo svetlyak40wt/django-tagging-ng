@@ -1,13 +1,18 @@
 # -*- coding: utf-8 -*-
 r"""
+>>> import os
 >>> from tagging.models import Tag, TaggedItem
 >>> from tagging.tests.models import Article, Link, Parrot
+>>> from tagging.utils import calculate_cloud, get_tag_name_list, get_tag_list, LINEAR
+>>> from tagging.validators import isTagList, isTag
 
 #############
 # Utilities #
 #############
 
->>> from tagging.utils import get_tag_name_list
+# Tag input ###################################################################
+
+# Tag names
 >>> get_tag_name_list(None)
 []
 >>> get_tag_name_list('')
@@ -23,9 +28,39 @@ r"""
 >>> get_tag_name_list('foo,ŠĐĆŽćžšđ')
 ['foo', '\xc5\xa0\xc4\x90\xc4\x86\xc5\xbd\xc4\x87\xc5\xbe\xc5\xa1\xc4\x91']
 
+# Tag objects
+>>> cheese = Tag.objects.create(name='cheese')
+>>> toast = Tag.objects.create(name='toast')
+>>> get_tag_list(cheese)
+[<Tag: cheese>]
+>>> get_tag_list('cheese toast')
+[<Tag: cheese>, <Tag: toast>]
+>>> get_tag_list(u'cheese toast')
+[<Tag: cheese>, <Tag: toast>]
+>>> get_tag_list([])
+[]
+>>> get_tag_list(['cheese',  'toast'])
+[<Tag: cheese>, <Tag: toast>]
+>>> get_tag_list([cheese.id,  toast.id])
+[<Tag: cheese>, <Tag: toast>]
+>>> get_tag_list(['cheese',  'toast', u'ŠĐĆŽćžšđ'])
+[<Tag: cheese>, <Tag: toast>]
+>>> get_tag_list([cheese,  toast])
+[<Tag: cheese>, <Tag: toast>]
+>>> get_tag_list((cheese,  toast))
+(<Tag: cheese>, <Tag: toast>)
+>>> get_tag_list(Tag.objects.filter(name__in=['cheese', 'toast']))
+[<Tag: cheese>, <Tag: toast>]
+>>> get_tag_list(['cheese', toast])
+Traceback (most recent call last):
+    ...
+ValueError: If a list or tuple of tags is provided, they must all be tag names, Tag objects or Tag ids
+>>> get_tag_list(29)
+Traceback (most recent call last):
+    ...
+ValueError: The tag input given was invalid
+
 # Tag clouds ##################################################################
->>> import os
->>> from tagging.utils import calculate_cloud, LINEAR
 >>> tags = []
 >>> for line in open(os.path.join(os.path.dirname(__file__), 'tags.txt')).readlines():
 ...     name, count = line.rstrip().split()
@@ -58,11 +93,11 @@ ValueError: Invalid font size distribution algorithm specified: cheese
 # Validators #
 ##############
 
->>> from tagging.validators import isTagList, isTag
 >>> isTagList('foo', {})
 >>> isTagList('foo bar baz', {})
 >>> isTagList('foo,bar,baz', {})
 >>> isTagList('foo, bar, baz', {})
+>>> isTagList('foo, ŠĐĆŽćžšđ, baz', {})
 >>> isTagList('foo qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvb bar', {})
 >>> isTagList('', {})
 Traceback (most recent call last):
@@ -140,6 +175,20 @@ ValidationError: ['Tag names must contain only unicode alphanumeric characters, 
 >>> [(tag.name, tag.count) for tag in tags]
 []
 
+# Once again, with feeling (strings)
+>>> tags = Tag.objects.related_for_model('bar', Parrot, counts=True)
+>>> [(tag.name, tag.count) for tag in tags]
+[('baz', 1), ('foo', 1), ('ter', 2)]
+>>> tags = Tag.objects.related_for_model('bar', Parrot, counts=False)
+>>> [tag.name for tag in tags]
+['baz', 'foo', 'ter']
+>>> tags = Tag.objects.related_for_model(['bar', 'ter'], Parrot, counts=True)
+>>> [(tag.name, tag.count) for tag in tags]
+[('baz', 1)]
+>>> tags = Tag.objects.related_for_model(['bar', 'ter', 'baz'], Parrot, counts=True)
+>>> [(tag.name, tag.count) for tag in tags]
+[]
+
 # Retrieving tagged objects by Model ##########################################
 
 >>> foo = Tag.objects.get(name='foo')
@@ -159,12 +208,26 @@ ValidationError: ['Tag names must contain only unicode alphanumeric characters, 
 >>> TaggedItem.objects.get_by_model(Parrot, [bar, ter])
 [<Parrot: late>, <Parrot: passed on>]
 
-# You can also pass a Tag QuerySet
+# You can also pass Tag QuerySets
 >>> TaggedItem.objects.get_by_model(Parrot, Tag.objects.filter(name__in=['foo', 'baz']))
 []
 >>> TaggedItem.objects.get_by_model(Parrot, Tag.objects.filter(name__in=['foo', 'bar']))
 [<Parrot: pining for the fjords>]
 >>> TaggedItem.objects.get_by_model(Parrot, Tag.objects.filter(name__in=['bar', 'ter']))
+[<Parrot: late>, <Parrot: passed on>]
+
+# You can also pass strings and lists of strings
+>>> TaggedItem.objects.get_by_model(Parrot, 'foo baz')
+[]
+>>> TaggedItem.objects.get_by_model(Parrot, 'foo bar')
+[<Parrot: pining for the fjords>]
+>>> TaggedItem.objects.get_by_model(Parrot, 'bar ter')
+[<Parrot: late>, <Parrot: passed on>]
+>>> TaggedItem.objects.get_by_model(Parrot, ['foo', 'baz'])
+[]
+>>> TaggedItem.objects.get_by_model(Parrot, ['foo', 'bar'])
+[<Parrot: pining for the fjords>]
+>>> TaggedItem.objects.get_by_model(Parrot, ['bar', 'ter'])
 [<Parrot: late>, <Parrot: passed on>]
 
 # Retrieving related objects by Model #########################################

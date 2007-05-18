@@ -225,10 +225,13 @@ objects which have those tags, i.e. tag1 AND tag2 ... AND tagN::
     >>> TaggedItem.objects.get_by_model(Widget, [house_tag, thing_tag])
     [<Widget: pk=1>]
 
-You can also pass a ``QuerySet`` to ``get_by_model``::
+Methods which take tags are flexible when it comes to tag input::
 
-    >>> tags = Tag.objects.filter(name__in=['house', 'thing'])
-    >>> TaggedItem.objects.get_by_model(Widget, tags)
+    >>> TaggedItem.objects.get_by_model(Widget, Tag.objects.filter(name__in=['house', 'thing']))
+    [<Widget: pk=1>]
+    >>> TaggedItem.objects.get_by_model(Widget, 'house thing')
+    [<Widget: pk=1>]
+    >>> TaggedItem.objects.get_by_model(Widget, ['house', 'thing'])
     [<Widget: pk=1>]
 
 
@@ -237,6 +240,31 @@ Utilities
 
 Tag-related utility methods are defined in the ``tagging.utils``
 module:
+
+get_tag_name_list(tags_names)
+-----------------------------
+
+Finds tag names in the given string and return them in a list.
+
+get_tag_list(tags)
+------------------
+
+Utility method for accepting tag input in a flexible manner.
+
+If a ``Tag`` object is given, it will be returned in a list as its
+single occupant.
+
+If given, the tag names in the following will be used to create a
+``Tag`` ``QuerySet``:
+
+    * A string, which may contain multiple tag names.
+    * A list or tuple of strings corresponding to tag names.
+    * A list or tuple of integers corresponding to tag ids.
+
+If given, the following will be returned as-is:
+
+    * A list or tuple of ``Tag`` objects.
+    * A ``Tag`` ``QuerySet``.
 
 calculate_cloud(tags, steps=4, distribution=tagging.utils.LOGARITHMIC)
 ----------------------------------------------------------------------

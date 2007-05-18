@@ -1,10 +1,11 @@
 """
 Models for generic tagging.
 """
+import types
 from django.db import backend, connection, models
 from django.db.models.query import QuerySet
 from django.contrib.contenttypes.models import ContentType
-from tagging.utils import calculate_cloud, get_tag_name_list, LOGARITHMIC
+from tagging.utils import calculate_cloud, get_tag_name_list, get_tag_list, LOGARITHMIC
 from tagging.validators import isTag
 
 # Generic relations were moved in Django revision 5172
@@ -82,11 +83,12 @@ class TagManager(models.Manager):
         each tag, indicating the number of items which have it in
         addition to the given list of tags.
         """
+        tags = get_tag_list(tags)
+        tag_count = len(tags)
         ctype = ContentType.objects.get_for_model(Model)
         count_select = ''
         if counts is True:
             count_select = ', COUNT(ti.object_id)'
-        tag_count = len(tags)
         query = """
         SELECT t.id, t.name%s
         FROM tagged_item ti INNER JOIN tag t ON ti.tag_id = t.id
@@ -155,16 +157,16 @@ class Tag(models.Model):
         return self.name
 
 class TaggedItemManager(models.Manager):
-    def get_by_model(self, Model, tag):
+    def get_by_model(self, Model, tags):
         """
         Create a queryset matching instances of the given Model
         associated with a given Tag or list of Tags.
         """
-        if isinstance(tag, (list, tuple, QuerySet)):
-            if len(tag) == 1: # Optimisation for single tag
-                tag = tag[0]
-            else:
-                return self.get_intersection_by_model(Model, tag)
+        tags = get_tag_list(tags)
+        if len(tags) == 0:
+            tag = tags[0] # Optimisation for single tag
+        else:
+            return self.get_intersection_by_model(Model, tags)
         ctype = ContentType.objects.get_for_model(Model)
         rel_table = backend.quote_name(self.model._meta.db_table)
         return Model.objects.extra(
@@ -196,11 +198,12 @@ class TaggedItemManager(models.Manager):
               clause in the QuerySet could exceed the length allowed,
               as could currently happen.
         """
+        tags = get_tag_list(tags)
+        tag_count = len(tags)
         rel_table = backend.quote_name(self.model._meta.db_table)
         model_table = backend.quote_name(Model._meta.db_table)
         model_pk = '%s.%s' % (model_table,
                               backend.quote_name(Model._meta.pk.column))
-        tag_count = len(tags)
         # This query selects the ids of all objects which have all the
         # given tags.
         query = """
