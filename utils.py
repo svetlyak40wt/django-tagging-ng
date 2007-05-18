@@ -1,5 +1,6 @@
-import math, re
+import math, re, types
 from django.conf import settings
+from django.db.models.query import QuerySet
 
 # Python 2.3 compatibility
 if not hasattr(__builtins__, 'set'):
@@ -15,6 +16,55 @@ def get_tag_name_list(tag_names):
         tag_names = tag_names.decode(settings.DEFAULT_CHARSET)
     results = find_tag_re.findall(tag_names or '')
     return [item.encode(settings.DEFAULT_CHARSET) for item in results]
+
+def get_tag_list(tags):
+    """
+    Utility method for accepting tag input in a flexible manner.
+
+    If a ``Tag`` object is given, it will be returned in a list as
+    its single occupant.
+
+    If given, the tag names in the following will be used to create a
+    ``Tag`` ``QuerySet``:
+
+        * A string, which may contain multiple tag names.
+        * A list or tuple of strings corresponding to tag names.
+        * A list or tuple of integers corresponding to tag ids.
+
+    If given, the following will be returned as-is:
+
+        * A list or tuple of ``Tag`` objects.
+        * A ``Tag`` ``QuerySet``.
+    """
+    from tagging.models import Tag
+    if isinstance(tags, Tag):
+        return [tags]
+    elif isinstance(tags, QuerySet) and tags.model is Tag:
+        return tags
+    elif isinstance(tags, types.StringTypes):
+        return Tag.objects.filter(name__in=get_tag_name_list(tags))
+    elif isinstance(tags, (types.ListType, types.TupleType)):
+        if len(tags) == 0:
+            return tags
+        contents = set()
+        for item in tags:
+            if isinstance(item, types.StringTypes):
+                contents.add('string')
+            elif isinstance(item, Tag):
+                contents.add('tag')
+            elif isinstance(item, (types.IntType, types.LongType)):
+                contents.add('int')
+        if len(contents) == 1:
+            if 'string' in contents:
+                return Tag.objects.filter(name__in=tags)
+            elif 'tag' in contents:
+                return tags
+            elif 'int' in contents:
+                return Tag.objects.filter(id__in=tags)
+        else:
+            raise ValueError('If a list or tuple of tags is provided, they must all be tag names, Tag objects or Tag ids')
+    else:
+        raise ValueError('The tag input given was invalid')
 
 # Font size distribution algorithms
 LOGARITHMIC, LINEAR = 1, 2
