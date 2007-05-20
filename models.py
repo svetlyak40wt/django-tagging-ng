@@ -163,7 +163,7 @@ class TaggedItemManager(models.Manager):
         associated with a given Tag or list of Tags.
         """
         tags = get_tag_list(tags)
-        if len(tags) == 0:
+        if len(tags) == 1:
             tag = tags[0] # Optimisation for single tag
         else:
             return self.get_intersection_by_model(Model, tags)
