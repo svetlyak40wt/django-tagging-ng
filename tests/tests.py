@@ -2,7 +2,7 @@
 r"""
 >>> import os
 >>> from tagging.models import Tag, TaggedItem
->>> from tagging.tests.models import Article, Link, Parrot
+>>> from tagging.tests.models import Article, Link, Perch, Parrot
 >>> from tagging.utils import calculate_cloud, get_tag_name_list, get_tag_list, LINEAR
 >>> from tagging.validators import isTagList, isTag
 >>> from tagging.forms import TagField
@@ -187,12 +187,32 @@ ValidationError: [u'Tag names must be no longer than 50 characters.']
 
 >>> Tag.objects.usage_for_model(Parrot)
 []
->>> Tag.objects.update_tags(Parrot.objects.create(state='pining for the fjords'), 'foo bar')
->>> Tag.objects.update_tags(Parrot.objects.create(state='passed on'), 'bar baz ter')
->>> Tag.objects.update_tags(Parrot.objects.create(state='no more'), 'foo ter')
->>> Tag.objects.update_tags(Parrot.objects.create(state='late'), 'bar ter')
+>>> parrot_details = (
+...     ('pining for the fjords', 9, 'foo bar'),
+...     ('passed on', 6, 'bar baz ter'),
+...     ('no more', 4, 'foo ter'),
+...     ('late', 2, 'bar ter'),
+... )
+
+>>> for state, perch_size, tags in parrot_details:
+...     perch = Perch.objects.create(size=perch_size)
+...     parrot = Parrot.objects.create(state=state, perch=perch)
+...     Tag.objects.update_tags(parrot, tags)
+
 >>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_model(Parrot, counts=True)]
 [('bar', 3), ('baz', 1), ('foo', 2), ('ter', 3)]
+
+# Limiting results to a subset of the model
+>>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_model(Parrot, counts=True, filters=dict(state='no more'))]
+[('foo', 1), ('ter', 1)]
+>>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_model(Parrot, counts=True, filters=dict(state__startswith='p'))]
+[('bar', 2), ('baz', 1), ('foo', 1), ('ter', 1)]
+>>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_model(Parrot, counts=True, filters=dict(perch__size__gt=4))]
+[('bar', 2), ('baz', 1), ('foo', 1), ('ter', 1)]
+>>> [(tag.name, hasattr(tag, 'counts')) for tag in Tag.objects.usage_for_model(Parrot, filters=dict(perch__size__gt=4))]
+[('bar', False), ('baz', False), ('foo', False), ('ter', False)]
+>>> [(tag.name, hasattr(tag, 'counts')) for tag in Tag.objects.usage_for_model(Parrot, filters=dict(perch__size__gt=99))]
+[]
 
 # Related tags
 >>> tags = Tag.objects.related_for_model(Tag.objects.filter(name__in=['bar']), Parrot, counts=True)
