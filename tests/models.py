@@ -1,8 +1,11 @@
 from django.db import models
-from tagging.fields import TagField
+
+class Perch(models.Model):
+    size = models.IntegerField()
 
 class Parrot(models.Model):
     state = models.CharField(maxlength=50)
+    perch = models.ForeignKey(Perch, null=True)
 
     def __str__(self):
         return self.state

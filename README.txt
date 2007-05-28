@@ -70,13 +70,18 @@ functions:
     * ``get_for_object(obj)`` -- Returns a ``QuerySet`` containing all
       ``Tag`` objects associated with ``obj``.
 
-    * ``usage_for_model(Model, counts=False)`` -- Returns a
-      ``QuerySet`` containing the distinct ``Tag`` objects associated
-      with all instances of model ``Model``.
+    * ``usage_for_model(Model, counts=False, filters=None)`` --
+      Returns a list of ``Tag`` objects associated with instances of
+      ``Model``.
 
       If ``counts`` is ``True``, a ``count`` attribute will be added
       to each tag, indicating how many times it has been associated
-      with all instances of ``Model``.
+      with instances of ``Model``.
+
+      To limit the tags (and counts, if specified) returned to those
+      used by a subset of the model's instances, pass a dictionary of
+      field lookups to be applied to ``Model`` as the ``filters``
+      argument.
 
     * ``related_for_model(tags, Model, counts=False)`` -- Returns a
       list of tags related to a given list of tags - that is, other
@@ -149,10 +154,19 @@ To retrieve all tags used for a particular model, use the
 To get a count of how many times each tag was used for a particular
 model, pass in ``True`` for the ``counts`` argument::
 
-    >>> tags = Tag.objects.get_for_model(Widget, counts=True)
+    >>> tags = Tag.objects.usage_for_model(Widget, counts=True)
     >>> [(tag.name, tag.count) for tag in tags]
     [('cheese', 1), ('house', 2), ('thing', 1), ('toast', 1)]
 
+You can also specify a dictionary of `field lookups`_ to be used to
+restrict the tags and counts returned based on a subset of the
+model's instances. For example, the following would retrieve all tags
+used on Widgets created by a user named Alan which have a size
+greater than 99::
+
+    >>> Tag.objects.usage_for_model(Widget, filters=dict(size__gt=99, user__username='Alan'))
+
+.. _`field lookups`: http://www.djangoproject.com/documentation/db-api/#field-lookups
 
 Tagged Items
 ============

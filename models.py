@@ -52,27 +52,61 @@ class TagManager(models.Manager):
         return self.filter(items__content_type__pk=ctype.id,
                            items__object_id=obj.id)
 
-    def usage_for_model(self, Model, counts=False):
+    def usage_for_model(self, Model, counts=False, filters=None):
         """
-        Create a queryset matching all tags associated with instances
-        of the given Model.
+        Obtain a list of tags associated with instances of the given
+        Model.
 
         If ``counts`` is True, a ``count`` attribute will be added to
         each tag, indicating how many times it has been used against
         the Model in question.
+
+        To limit the tags (and counts, if specified) returned to those
+        used by a subset of the Model's instances, pass a dictionary
+        of field lookups to be applied to the given Model as the
+        ``filters`` argument.
         """
+        if filters is None: filters = {}
         ctype = ContentType.objects.get_for_model(Model)
-        qs = self.filter(items__content_type__pk=ctype.id).distinct()
-        if counts is True:
-            qs = qs.extra(
-                select={
-                    'count': 'SELECT COUNT(*) FROM tagged_item ' \
-                             ' WHERE tagged_item.tag_id = tag.id ' \
-                             ' AND tagged_item.content_type_id = %s',
-                },
-                params=[ctype.id],
-            )
-        return qs
+
+        count_sql = ', COUNT(%s.id) AS %s' % (Model._meta.db_table, backend.quote_name('count'))
+        query = """
+        SELECT DISTINCT tag.id, tag.name%s
+        FROM
+            tag
+            INNER JOIN tagged_item
+                ON tag.id = tagged_item.tag_id
+            INNER JOIN %s
+                ON tagged_item.object_id = %s.id
+            %%s
+        WHERE tagged_item.content_type_id = %s
+            %%s
+        GROUP BY tag.id
+        ORDER BY tag.name ASC""" % (
+            counts and count_sql or '',
+            Model._meta.db_table, Model._meta.db_table,
+            ctype.id
+        )
+
+        extra_joins = ''
+        extra_criteria = ''
+        params = []
+        if len(filters) > 0:
+            from django.db.models.query import parse_lookup
+            joins, where, params = parse_lookup(filters.items(), Model._meta)
+            extra_joins = " ".join(["%s %s AS %s ON %s" % (join_type, table, alias, condition)
+                                    for (alias, (table, join_type, condition)) in joins.items()])
+            extra_criteria = 'AND %s' % (' AND '.join(where))
+
+        cursor = connection.cursor()
+        cursor.execute(query % (extra_joins, extra_criteria), params)
+        tags = []
+        for row in cursor.fetchall():
+            t = Tag(*row[:2])
+            if counts:
+                t.count = row[2]
+            tags.append(t)
+        return tags
 
     def related_for_model(self, tags, Model, counts=False):
         """
