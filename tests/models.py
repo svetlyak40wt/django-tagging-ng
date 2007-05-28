@@ -2,6 +2,7 @@ from django.db import models
 
 class Perch(models.Model):
     size = models.IntegerField()
+    smelly = models.BooleanField(default=True)
 
 class Parrot(models.Model):
     state = models.CharField(maxlength=50)
