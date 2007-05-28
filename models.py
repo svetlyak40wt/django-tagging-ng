@@ -69,7 +69,13 @@ class TagManager(models.Manager):
         if filters is None: filters = {}
         ctype = ContentType.objects.get_for_model(Model)
 
-        count_sql = ', COUNT(%s.id) AS %s' % (Model._meta.db_table, backend.quote_name('count'))
+        count_sql = ''
+        if counts:
+            count_sql = ', COUNT(%s.id) AS %s' % (
+                backend.quote_name(Model._meta.db_table),
+                backend.quote_name('count'),
+            )
+        rel_table = backend.quote_name(Model._meta.db_table)
         query = """
         SELECT DISTINCT tag.id, tag.name%s
         FROM
@@ -83,8 +89,9 @@ class TagManager(models.Manager):
             %%s
         GROUP BY tag.id
         ORDER BY tag.name ASC""" % (
-            counts and count_sql or '',
-            Model._meta.db_table, Model._meta.db_table,
+            count_sql,
+            rel_table,
+            rel_table,
             ctype.id
         )
 
@@ -94,7 +101,7 @@ class TagManager(models.Manager):
         if len(filters) > 0:
             from django.db.models.query import parse_lookup
             joins, where, params = parse_lookup(filters.items(), Model._meta)
-            extra_joins = " ".join(["%s %s AS %s ON %s" % (join_type, table, alias, condition)
+            extra_joins = ' '.join(['%s %s AS %s ON %s' % (join_type, table, alias, condition)
                                     for (alias, (table, join_type, condition)) in joins.items()])
             extra_criteria = 'AND %s' % (' AND '.join(where))
 
@@ -120,9 +127,9 @@ class TagManager(models.Manager):
         tags = get_tag_list(tags)
         tag_count = len(tags)
         ctype = ContentType.objects.get_for_model(Model)
-        count_select = ''
-        if counts is True:
-            count_select = ', COUNT(ti.object_id)'
+        count_sql = ''
+        if counts:
+            count_sql = ', COUNT(ti.object_id)'
         query = """
         SELECT t.id, t.name%s
         FROM tagged_item ti INNER JOIN tag t ON ti.tag_id = t.id
@@ -140,7 +147,7 @@ class TagManager(models.Manager):
           AND t.id NOT IN (%s)
         GROUP BY t.id
         ORDER BY 2 ASC""" % (
-            count_select, ctype.id,
+            count_sql, ctype.id,
             ctype.id, ','.join(['%s'] * tag_count), tag_count,
             ','.join(['%s'] * tag_count)
         )
@@ -279,7 +286,7 @@ class TaggedItemManager(models.Manager):
         related_ctype = ContentType.objects.get_for_model(Model)
         related_table = backend.quote_name(Model._meta.db_table)
         query = """
-        SELECT %s.id, COUNT(related_tagged_item.object_id) AS count
+        SELECT %s.id, COUNT(related_tagged_item.object_id) AS %s
         FROM %s, tagged_item, tag, tagged_item related_tagged_item
         WHERE tagged_item.object_id = %s
           AND tagged_item.content_type_id =  %s
@@ -287,7 +294,12 @@ class TaggedItemManager(models.Manager):
           AND related_tagged_item.content_type_id = %s
           AND related_tagged_item.tag_id = tagged_item.tag_id
           AND %s.id = related_tagged_item.object_id""" % (
-              related_table, related_table, obj.id, ctype.id, related_ctype.id, related_table
+              related_table, backend.quote_name('count'),
+              related_table,
+              obj.id,
+              ctype.id,
+              related_ctype.id,
+              related_table
         )
         if ctype.id == related_ctype.id:
             query += """
