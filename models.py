@@ -211,7 +211,7 @@ class TaggedItemManager(models.Manager):
             return self.get_intersection_by_model(Model, tags)
         ctype = ContentType.objects.get_for_model(Model)
         rel_table = backend.quote_name(self.model._meta.db_table)
-        return Model.objects.extra(
+        return Model._default_manager.extra(
             tables=[self.model._meta.db_table], # Use a non-explicit join
             where=[
                 '%s.content_type_id = %%s' % rel_table,
@@ -267,7 +267,7 @@ class TaggedItemManager(models.Manager):
             ids = [row[0] for row in cursor.fetchall()]
         except IndexError:
             ids = []
-        return Model.objects.filter(pk__in=ids)
+        return Model._default_manager.filter(pk__in=ids)
 
     def get_related(self, obj, Model, num=None):
         """
