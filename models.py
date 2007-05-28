@@ -67,33 +67,29 @@ class TagManager(models.Manager):
         ``filters`` argument.
         """
         if filters is None: filters = {}
-        ctype = ContentType.objects.get_for_model(Model)
 
-        count_sql = ''
-        if counts:
-            count_sql = ', COUNT(%s.id) AS %s' % (
-                backend.quote_name(Model._meta.db_table),
-                backend.quote_name('count'),
-            )
-        rel_table = backend.quote_name(Model._meta.db_table)
+        model_table = backend.quote_name(Model._meta.db_table)
+        model_pk = '%s.%s' % (model_table, backend.quote_name(Model._meta.pk.column))
         query = """
-        SELECT DISTINCT tag.id, tag.name%s
+        SELECT DISTINCT %(tag)s.id, %(tag)s.name%(count_sql)s
         FROM
-            tag
-            INNER JOIN tagged_item
-                ON tag.id = tagged_item.tag_id
-            INNER JOIN %s
-                ON tagged_item.object_id = %s.id
+            %(tag)s
+            INNER JOIN %(tagged_item)s
+                ON %(tag)s.id = %(tagged_item)s.tag_id
+            INNER JOIN %(model)s
+                ON %(tagged_item)s.object_id = %(model_pk)s
             %%s
-        WHERE tagged_item.content_type_id = %s
+        WHERE %(tagged_item)s.content_type_id = %(content_type_id)s
             %%s
-        GROUP BY tag.id
-        ORDER BY tag.name ASC""" % (
-            count_sql,
-            rel_table,
-            rel_table,
-            ctype.id
-        )
+        GROUP BY %(tag)s.id
+        ORDER BY %(tag)s.name ASC""" % {
+            'tag': backend.quote_name(Tag._meta.db_table),
+            'count_sql': counts and (', COUNT(%s)' % model_pk) or '',
+            'tagged_item': backend.quote_name(TaggedItem._meta.db_table),
+            'model': model_table,
+            'model_pk': model_pk,
+            'content_type_id': ContentType.objects.get_for_model(Model).id,
+        }
 
         extra_joins = ''
         extra_criteria = ''
@@ -126,31 +122,31 @@ class TagManager(models.Manager):
         """
         tags = get_tag_list(tags)
         tag_count = len(tags)
-        ctype = ContentType.objects.get_for_model(Model)
-        count_sql = ''
-        if counts:
-            count_sql = ', COUNT(ti.object_id)'
+        tagged_item_table = backend.quote_name(TaggedItem._meta.db_table)
         query = """
-        SELECT t.id, t.name%s
-        FROM tagged_item ti INNER JOIN tag t ON ti.tag_id = t.id
-        WHERE ti.content_type_id = %s
-          AND ti.object_id IN
+        SELECT %(tag)s.id, %(tag)s.name%(count_sql)s
+        FROM %(tagged_item)s INNER JOIN %(tag)s ON %(tagged_item)s.tag_id = %(tag)s.id
+        WHERE %(tagged_item)s.content_type_id = %(content_type_id)s
+          AND %(tagged_item)s.object_id IN
           (
-              SELECT tagged_item.object_id
-              FROM tagged_item, tag
-              WHERE tagged_item.content_type_id = %s
-                AND tag.id = tagged_item.tag_id
-                AND tag.id IN (%s)
-              GROUP BY tagged_item.object_id
-              HAVING COUNT(tagged_item.object_id) = %s
+              SELECT %(tagged_item)s.object_id
+              FROM %(tagged_item)s, %(tag)s
+              WHERE %(tagged_item)s.content_type_id = %(content_type_id)s
+                AND %(tag)s.id = %(tagged_item)s.tag_id
+                AND %(tag)s.id IN (%(tag_id_placeholders)s)
+              GROUP BY %(tagged_item)s.object_id
+              HAVING COUNT(%(tagged_item)s.object_id) = %(tag_count)s
           )
-          AND t.id NOT IN (%s)
-        GROUP BY t.id
-        ORDER BY 2 ASC""" % (
-            count_sql, ctype.id,
-            ctype.id, ','.join(['%s'] * tag_count), tag_count,
-            ','.join(['%s'] * tag_count)
-        )
+          AND %(tag)s.id NOT IN (%(tag_id_placeholders)s)
+        GROUP BY %(tag)s.id
+        ORDER BY %(tag)s.name ASC""" % {
+            'tag': backend.quote_name(Tag._meta.db_table),
+            'count_sql': counts and ', COUNT(%s.object_id)' % tagged_item_table or '',
+            'tagged_item': backend.quote_name(TaggedItem._meta.db_table),
+            'content_type_id': ContentType.objects.get_for_model(Model).id,
+            'tag_id_placeholders': ','.join(['%s'] * tag_count),
+            'tag_count': tag_count,
+        }
 
         cursor = connection.cursor()
         cursor.execute(query, [tag.id for tag in tags] * 2)
@@ -241,32 +237,27 @@ class TaggedItemManager(models.Manager):
         """
         tags = get_tag_list(tags)
         tag_count = len(tags)
-        rel_table = backend.quote_name(self.model._meta.db_table)
         model_table = backend.quote_name(Model._meta.db_table)
-        model_pk = '%s.%s' % (model_table,
-                              backend.quote_name(Model._meta.pk.column))
         # This query selects the ids of all objects which have all the
         # given tags.
         query = """
-        SELECT %s
-        FROM %s, %s
-        WHERE %s.content_type_id = %%s
-          AND %s.tag_id IN (%s)
-          AND %s = %s.object_id
-        GROUP BY %s
-        HAVING COUNT(%s) = %%s""" % (
-            model_pk,
-            model_table, rel_table,
-            rel_table,
-            rel_table, ','.join(['%s'] * tag_count),
-            model_pk, rel_table,
-            model_pk,
-            model_pk
-        )
-        ctype = ContentType.objects.get_for_model(Model)
+        SELECT %(model_pk)s
+        FROM %(model)s, %(tagged_item)s
+        WHERE %(tagged_item)s.content_type_id = %(content_type_id)s
+          AND %(tagged_item)s.tag_id IN (%(tag_id_placeholders)s)
+          AND %(model_pk)s = %(tagged_item)s.object_id
+        GROUP BY %(model_pk)s
+        HAVING COUNT(%(model_pk)s) = %(tag_count)s""" % {
+            'model_pk': '%s.%s' % (model_table, backend.quote_name(Model._meta.pk.column)),
+            'model': model_table,
+            'tagged_item': backend.quote_name(TaggedItem._meta.db_table),
+            'content_type_id': ContentType.objects.get_for_model(Model).id,
+            'tag_id_placeholders': ','.join(['%s'] * tag_count),
+            'tag_count': tag_count,
+        }
+
         cursor = connection.cursor()
-        cursor.execute(query,
-                       [ctype.id] + [tag.id for tag in tags] + [tag_count])
+        cursor.execute(query, [tag.id for tag in tags])
         try:
             ids = [row[0] for row in cursor.fetchall()]
         except IndexError:
@@ -282,34 +273,38 @@ class TaggedItemManager(models.Manager):
         If ``num`` is given, a maximum of ``num`` instances will be
         returned.
         """
-        ctype = ContentType.objects.get_for_model(obj)
-        related_ctype = ContentType.objects.get_for_model(Model)
-        related_table = backend.quote_name(Model._meta.db_table)
+        model_table = backend.quote_name(Model._meta.db_table)
+        content_type = ContentType.objects.get_for_model(obj)
+        related_content_type = ContentType.objects.get_for_model(Model)
         query = """
-        SELECT %s.id, COUNT(related_tagged_item.object_id) AS %s
-        FROM %s, tagged_item, tag, tagged_item related_tagged_item
-        WHERE tagged_item.object_id = %s
-          AND tagged_item.content_type_id =  %s
-          AND tag.id = tagged_item.tag_id
-          AND related_tagged_item.content_type_id = %s
-          AND related_tagged_item.tag_id = tagged_item.tag_id
-          AND %s.id = related_tagged_item.object_id""" % (
-              related_table, backend.quote_name('count'),
-              related_table,
-              obj.id,
-              ctype.id,
-              related_ctype.id,
-              related_table
-        )
-        if ctype.id == related_ctype.id:
+        SELECT %(model_pk)s, COUNT(related_tagged_item.object_id) AS %(count)s
+        FROM %(model)s, %(tagged_item)s, %(tag)s, %(tagged_item)s related_tagged_item
+        WHERE %(tagged_item)s.object_id = %%s
+          AND %(tagged_item)s.content_type_id = %(content_type_id)s
+          AND %(tag)s.id = %(tagged_item)s.tag_id
+          AND related_tagged_item.content_type_id = %(related_content_type_id)s
+          AND related_tagged_item.tag_id = %(tagged_item)s.tag_id
+          AND %(model_pk)s = related_tagged_item.object_id"""
+        if content_type.id == related_content_type.id:
+            # Exclude the given instance itself if determining related
+            # instances for the same model.
             query += """
-            AND related_tagged_item.object_id != tagged_item.object_id"""
+          AND related_tagged_item.object_id != %(tagged_item)s.object_id"""
         query += """
         GROUP BY related_tagged_item.object_id
-        ORDER BY count DESC"""
+        ORDER BY %(count)s DESC"""
+        query = query % {
+            'model_pk': '%s.%s' % (model_table, backend.quote_name(Model._meta.pk.column)),
+            'count': backend.quote_name('count'),
+            'model': model_table,
+            'tagged_item': backend.quote_name(TaggedItem._meta.db_table),
+            'tag': backend.quote_name(Tag._meta.db_table),
+            'content_type_id': content_type.id,
+            'related_content_type_id': related_content_type.id,
+        }
 
         cursor = connection.cursor()
-        cursor.execute(query, [])
+        cursor.execute(query, [obj.id])
         if num is not None:
             object_ids = [row[0] for row in cursor.fetchall()[:num]]
         else:
