@@ -5,6 +5,7 @@ r"""
 >>> from tagging.tests.models import Article, Link, Parrot
 >>> from tagging.utils import calculate_cloud, get_tag_name_list, get_tag_list, LINEAR
 >>> from tagging.validators import isTagList, isTag
+>>> from tagging.forms import TagField
 
 #############
 # Utilities #
@@ -125,6 +126,38 @@ ValidationError: ['Tag names must be no longer than 50 characters.']
 Traceback (most recent call last):
     ...
 ValidationError: ['Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens.']
+
+###############
+# Form Fields #
+###############
+
+>>> t = TagField()
+>>> t.clean('foo')
+u'foo'
+>>> t.clean('foo bar baz')
+u'foo bar baz'
+>>> t.clean('foo,bar,baz')
+u'foo,bar,baz'
+>>> t.clean('foo, bar, baz')
+u'foo, bar, baz'
+>>> t.clean('foo qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvb bar')
+u'foo qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvb bar'
+>>> t.clean(' foo')
+Traceback (most recent call last):
+    ...
+ValidationError: [u'Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens, with a comma, space or comma followed by space used to separate each tag name.']
+>>> t.clean('foo ')
+Traceback (most recent call last):
+    ...
+ValidationError: [u'Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens, with a comma, space or comma followed by space used to separate each tag name.']
+>>> t.clean('foo  bar')
+Traceback (most recent call last):
+    ...
+ValidationError: [u'Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens, with a comma, space or comma followed by space used to separate each tag name.']
+>>> t.clean('foo qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbn bar')
+Traceback (most recent call last):
+    ...
+ValidationError: [u'Tag names must be no longer than 50 characters.']
 
 ###########
 # Tagging #
