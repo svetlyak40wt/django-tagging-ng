@@ -263,11 +263,11 @@ class TaggedItemManager(models.Manager):
 
         cursor = connection.cursor()
         cursor.execute(query, [tag.id for tag in tags])
-        try:
-            ids = [row[0] for row in cursor.fetchall()]
-        except IndexError:
-            ids = []
-        return Model._default_manager.filter(pk__in=ids)
+        object_ids = [row[0] for row in cursor.fetchall()]
+        if len(object_ids) > 0:
+            return Model._default_manager.filter(pk__in=object_ids)
+        else:
+            return Model._default_manager.none()
 
     def get_related(self, obj, Model, num=None):
         """
@@ -297,7 +297,8 @@ class TaggedItemManager(models.Manager):
           AND related_tagged_item.object_id != %(tagged_item)s.object_id"""
         query += """
         GROUP BY related_tagged_item.object_id
-        ORDER BY %(count)s DESC"""
+        ORDER BY %(count)s DESC
+        %(limit_offset)s"""
         query = query % {
             'model_pk': '%s.%s' % (model_table, backend.quote_name(Model._meta.pk.column)),
             'count': backend.quote_name('count'),
@@ -306,19 +307,19 @@ class TaggedItemManager(models.Manager):
             'tag': backend.quote_name(Tag._meta.db_table),
             'content_type_id': content_type.id,
             'related_content_type_id': related_content_type.id,
+            'limit_offset': num is not None and backend.get_limit_offset_sql(num) or '',
         }
 
         cursor = connection.cursor()
         cursor.execute(query, [obj.id])
-        if num is not None:
-            object_ids = [row[0] for row in cursor.fetchall()[:num]]
+        object_ids = [row[0] for row in cursor.fetchall()]
+        if len(object_ids) > 0:
+            # Use in_bulk here instead of an id__in lookup, because id__in would
+            # clobber the ordering.
+            object_dict = Model._default_manager.in_bulk(object_ids)
+            return [object_dict[object_id] for object_id in object_ids]
         else:
-            object_ids = [row[0] for row in cursor.fetchall()]
-
-        # Use in_bulk here instead of an id__in lookup, because id__in would
-        # clobber the ordering.
-        object_dict = Model._default_manager.in_bulk(object_ids)
-        return [object_dict[object_id] for object_id in object_ids]
+            return Model._default_manager.none()
 
 class TaggedItem(models.Model):
     tag = models.ForeignKey(Tag, related_name='items')
