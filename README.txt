@@ -91,11 +91,12 @@ functions:
       to each tag, indicating the number of items which have it in
       addition to the given list of tags.
 
-    * ``cloud_for_model(Model, steps=4)`` -- Returns a list of the
-      distinct ``Tag`` objects associated with all instances of
-      ``Model``, each having along a ``count`` attribute as above and
-      an additional ``font_size`` attribute, for use in creation of a
-      tag cloud (a weighted list).
+    * ``cloud_for_model(Model, steps=4, distribution=LOGARITHMIC,
+      filters=None)`` -- Returns a list of the distinct ``Tag``
+      objects associated with instances of ``Model``, each having a
+      ``count`` attribute as above and an additional ``font_size``
+      attribute, for use in creation of a tag cloud (a type of
+      weighted list).
 
       ``steps`` defines the number of font sizes available -
       ``font_size`` may be an integer between ``1`` and ``steps``,
@@ -105,6 +106,11 @@ functions:
       algorithm which will be used - logarithmic or linear. It must
       be either ``tagging.utils.LOGARITHMIC`` or
       ``tagging.utils.LINEAR``.
+
+      To limit the tags and counts used to calculate the cloud to
+      those associated with a subset of the Model's instances, pass a
+      dictionary of field lookups to be applied to the given Model as
+      the ``filters`` argument.
 
 Basic usage
 -----------

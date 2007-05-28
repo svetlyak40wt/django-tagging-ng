@@ -158,7 +158,7 @@ class TagManager(models.Manager):
             related.append(tag)
         return related
 
-    def cloud_for_model(self, Model, steps=4, distribution=LOGARITHMIC):
+    def cloud_for_model(self, Model, steps=4, distribution=LOGARITHMIC, filters=None):
         """
         Obtain a list of tags associated with instances of the given
         Model, giving each tag a ``count`` attribute indicating how
@@ -172,8 +172,13 @@ class TagManager(models.Manager):
         algorithm which will be used - logarithmic or linear. It must
         be either ``tagging.utils.LOGARITHMIC`` or
         ``tagging.utils.LINEAR``.
+
+        To limit the tags and counts used to calculate the cloud to
+        those associated with a subset of the Model's instances, pass
+        a dictionary of field lookups to be applied to the given Model
+        as the ``filters`` argument.
         """
-        tags = list(self.usage_for_model(Model, counts=True))
+        tags = list(self.usage_for_model(Model, counts=True, filters=filters))
         return calculate_cloud(tags, steps)
 
 class Tag(models.Model):
