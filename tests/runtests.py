@@ -6,6 +6,6 @@ from django.conf import settings
 from django.db.models.loading import load_app
 
 test_models = [load_app(app) for app in settings.INSTALLED_APPS]
-failures = run_tests(test_models)
+failures = run_tests(test_models, verbosity=9)
 if failures:
     sys.exit(failures)
