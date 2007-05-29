@@ -48,12 +48,13 @@ Fields
 ``Tag`` objects have the following fields:
 
     * ``name`` -- The name of the tag. This is a unique value
-      consisting only of letters, numbers, hypens and underscores.
+      consisting only of unicode alphanumeric characters, numbers,
+      underscores and hyphens.
 
 Manager functions
 ~~~~~~~~~~~~~~~~~
 
-The ``Tag`` model has a custom manager that has the following helper
+The ``Tag`` model has a custom manager which has the following helper
 functions:
 
     * ``update_tags(obj, tag_names)`` -- Updates tags associated with
@@ -131,7 +132,7 @@ Basic usage
 Tagging objects and retrieving an object's tags
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Objects may be tagged the ``update_tags`` helper function::
+Objects may be tagged using the ``update_tags`` helper function::
 
     >>> from shop.apps.products.models import Widget
     >>> from tagging.models import Tag
@@ -151,7 +152,8 @@ Tags are created, associated and unassociated accordingly when you use
     >>> Tag.objects.get_for_object(widget)
     [<Tag: house>, <Tag: monkey>]
 
-Clear an object's tags by passing ``None`` to ``update_tags``::
+Clear an object's tags by passing ``None`` or ``''`` to
+``update_tags``::
 
     >>> Tag.objects.update_tags(widget, None)
     >>> Tag.objects.get_for_object(widget)
@@ -194,6 +196,7 @@ greater than 99::
 
 .. _`field lookups`: http://www.djangoproject.com/documentation/db-api/#field-lookups
 
+
 Tagged Items
 ============
 
@@ -217,12 +220,12 @@ Fields
 Manager functions
 ~~~~~~~~~~~~~~~~~
 
-The ``TaggedItem`` model has a custom manager that has the following
+The ``TaggedItem`` model has a custom manager which has the following
 helper functions:
 
     * ``get_by_model(Model, tag)`` -- If ``tag`` is an instance of a
       ``Tag``, returns a ``QuerySet`` containing all instances of
-      ``Model`` which are tagged with ``tag``.
+      ``Model`` which are tagged with it.
 
       If ``tag`` is a list of tags, returns a ``QuerySet`` containing
       all instances of ``Model`` which are tagged with every tag in
@@ -249,7 +252,7 @@ Basic usage
 Retrieving tagged objects
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Objects may be retrieve based on their tags using the ``get_by_model``
+Objects may be retrieved based on their tags using the ``get_by_model``
 helper function::
 
     >>> from shop.apps.products.models import Widget
@@ -265,7 +268,7 @@ objects which have those tags, i.e. tag1 AND tag2 ... AND tagN::
     >>> TaggedItem.objects.get_by_model(Widget, [house_tag, thing_tag])
     [<Widget: pk=1>]
 
-Methods which take tags are flexible when it comes to tag input::
+Functions which take tags are flexible when it comes to tag input::
 
     >>> TaggedItem.objects.get_by_model(Widget, Tag.objects.filter(name__in=['house', 'thing']))
     [<Widget: pk=1>]
@@ -278,7 +281,7 @@ Methods which take tags are flexible when it comes to tag input::
 Utilities
 =========
 
-Tag-related utility methods are defined in the ``tagging.utils``
+Tag-related utility functions are defined in the ``tagging.utils``
 module:
 
 get_tag_name_list(tags_names)
@@ -289,7 +292,7 @@ Finds tag names in the given string and return them in a list.
 get_tag_list(tags)
 ------------------
 
-Utility method for accepting tag input in a flexible manner.
+Utility function for accepting tag input in a flexible manner.
 
 If a ``Tag`` object is given, it will be returned in a list as its
 single occupant.
@@ -390,7 +393,7 @@ separated by a single comma, a single space or a comma followed by a
 space.
 
 When you generate a form for one of your models automatically, using
-the ``form_for_model`` or ``form_for_instance`` methods provided by
+the ``form_for_model`` or ``form_for_instance`` functions provided by
 the newforms library, any ``tagging.fields.TagField`` fields in your
 model will automatically be represented by a
 ``tagging.forms.TagField`` in the generated form.
