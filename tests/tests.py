@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 r"""
 >>> import os
+>>> from django import newforms as forms
 >>> from tagging.models import Tag, TaggedItem
->>> from tagging.tests.models import Article, Link, Perch, Parrot
+>>> from tagging.tests.models import Article, Link, Perch, Parrot, Widget
 >>> from tagging.utils import calculate_cloud, get_tag_name_list, get_tag_list, LINEAR
 >>> from tagging.validators import isTagList, isTag
 >>> from tagging.forms import TagField
@@ -158,6 +159,17 @@ ValidationError: [u'Tag names must contain only unicode alphanumeric characters,
 Traceback (most recent call last):
     ...
 ValidationError: [u'Tag names must be no longer than 50 characters.']
+
+# Ensure that automatically created forms use TagField
+>>> WidgetForm = forms.form_for_model(Widget)
+>>> form = WidgetForm()
+>>> form.fields['tags'].__class__.__name__
+'TagField'
+>>> w = Widget(tags="one two three")
+>>> WidgetInstanceForm = forms.form_for_instance(w)
+>>> form = WidgetInstanceForm()
+>>> form.fields['tags'].__class__.__name__
+'TagField'
 
 ###########
 # Tagging #

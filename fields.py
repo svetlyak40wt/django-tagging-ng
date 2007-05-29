@@ -11,9 +11,9 @@ class TagField(CharField):
     the splitting/reordering/etc. under the hood.
     """
     def __init__(self, **kwargs):
-        kwargs["maxlength"] = kwargs.get("maxlength", 255)
-        kwargs["blank"] = kwargs.get("blank", True)
-        kwargs["validator_list"] = [isTagList] + kwargs.get("validator_list", [])
+        kwargs['maxlength'] = kwargs.get('maxlength', 255)
+        kwargs['blank'] = kwargs.get('blank', True)
+        kwargs['validator_list'] = [isTagList] + kwargs.get('validator_list', [])
         super(TagField, self).__init__(**kwargs)
 
     def contribute_to_class(self, cls, name):
@@ -38,10 +38,10 @@ class TagField(CharField):
 
             >>> l = Link.objects.get(...)
             >>> l.tags
-            "tag1 tag2 tag3"
+            'tag1 tag2 tag3'
 
             >>> Link.tags
-            "tag1 tag2 tag3 tag4"
+            'tag1 tag2 tag3 tag4'
 
         """
         # Handle access on the model (i.e. Link.tags)
@@ -51,7 +51,7 @@ class TagField(CharField):
         tags = self._get_instance_tag_cache(instance)
         if tags is None:
             if instance._get_pk_val() is None:
-                self._set_instance_tag_cache(instance, "")
+                self._set_instance_tag_cache(instance, '')
             else:
                 self._set_instance_tag_cache(instance, tags2str(Tag.objects.get_for_object(instance)))
         return self._get_instance_tag_cache(instance)
@@ -61,7 +61,7 @@ class TagField(CharField):
         Set an object's tags.
         """
         if instance is None:
-            raise AttributeError("%s can only be set on instances." % self.name)
+            raise AttributeError('%s can only be set on instances.' % self.name)
         self._set_instance_tag_cache(instance, value)
 
     def _save(self, signal, sender, instance):
@@ -76,23 +76,29 @@ class TagField(CharField):
         """
         Clear all of an object's tags.
         """
-        self._set_instance_tag_cache(instance, "")
+        self._set_instance_tag_cache(instance, '')
 
     def _get_instance_tag_cache(self, instance):
         """
         Helper: get an instance's tag cache.
         """
-        return getattr(instance, "_%s_cache" % self.attname, None)
+        return getattr(instance, '_%s_cache' % self.attname, None)
 
     def _set_instance_tag_cache(self, instance, tags):
         """
         Helper: set and instance's tag cache.
         """
-        setattr(instance, "_%s_cache" % self.attname, tags)
+        setattr(instance, '_%s_cache' % self.attname, tags)
 
     def get_internal_type(self):
-        return "CharField"
+        return 'CharField'
+
+    def formfield(self, **kwargs):
+        from tagging import forms
+        defaults = {'form_class': forms.TagField}
+        defaults.update(kwargs)
+        return super(TagField, self).formfield(**defaults)
 
 # Helper
 def tags2str(tagset):
-    return " ".join(t.name for t in tagset)
+    return ' '.join(t.name for t in tagset)
