@@ -48,7 +48,7 @@ class TagManager(Manager):
         return self.filter(items__content_type__pk=ctype.id,
                            items__object_id=obj.id)
 
-    def usage_for_model(self, Model, counts=False, filters=None):
+    def usage_for_model(self, Model, counts=False, min_count=None, filters=None):
         """
         Obtain a list of tags associated with instances of the given
         Model.
@@ -57,12 +57,17 @@ class TagManager(Manager):
         each tag, indicating how many times it has been used against
         the Model in question.
 
+        If ``min_count`` is given, only tags which have a ``count``
+        greater than or equal to ``min_count`` will be returned.
+        Passing a value for ``min_count`` implies ``counts=True``.
+
         To limit the tags (and counts, if specified) returned to those
         used by a subset of the Model's instances, pass a dictionary
         of field lookups to be applied to the given Model as the
         ``filters`` argument.
         """
         if filters is None: filters = {}
+        if min_count is not None: counts = True
 
         model_table = backend.quote_name(Model._meta.db_table)
         model_pk = '%s.%s' % (model_table, backend.quote_name(Model._meta.pk.column))
@@ -78,6 +83,7 @@ class TagManager(Manager):
         WHERE %(tagged_item)s.content_type_id = %(content_type_id)s
             %%s
         GROUP BY %(tag)s.id, %(tag)s.name
+        %%s
         ORDER BY %(tag)s.name ASC""" % {
             'tag': backend.quote_name(self.model._meta.db_table),
             'count_sql': counts and (', COUNT(%s)' % model_pk) or '',
@@ -89,15 +95,19 @@ class TagManager(Manager):
 
         extra_joins = ''
         extra_criteria = ''
+        min_count_sql = ''
         params = []
         if len(filters) > 0:
             joins, where, params = parse_lookup(filters.items(), Model._meta)
             extra_joins = ' '.join(['%s %s AS %s ON %s' % (join_type, table, alias, condition)
                                     for (alias, (table, join_type, condition)) in joins.items()])
             extra_criteria = 'AND %s' % (' AND '.join(where))
+        if min_count is not None:
+            min_count_sql = 'HAVING COUNT(%s) >= %%s' % model_pk
+            params.append(min_count)
 
         cursor = connection.cursor()
-        cursor.execute(query % (extra_joins, extra_criteria), params)
+        cursor.execute(query % (extra_joins, extra_criteria, min_count_sql), params)
         tags = []
         for row in cursor.fetchall():
             t = self.model(*row[:2])
@@ -106,7 +116,7 @@ class TagManager(Manager):
             tags.append(t)
         return tags
 
-    def related_for_model(self, tags, Model, counts=False):
+    def related_for_model(self, tags, Model, counts=False, min_count=None):
         """
         Obtain a list of tags related to a given list of tags - that
         is, other tags used by items which have all the given tags.
@@ -114,7 +124,12 @@ class TagManager(Manager):
         If ``counts`` is True, a ``count`` attribute will be added to
         each tag, indicating the number of items which have it in
         addition to the given list of tags.
+
+        If ``min_count`` is given, only tags which have a ``count``
+        greater than or equal to ``min_count`` will be returned.
+        Passing a value for ``min_count`` implies ``counts=True``.
         """
+        if min_count is not None: counts = True
         tags = get_tag_list(tags)
         tag_count = len(tags)
         tagged_item_table = backend.quote_name(self._get_related_model_by_accessor('items')._meta.db_table)
@@ -134,6 +149,7 @@ class TagManager(Manager):
           )
           AND %(tag)s.id NOT IN (%(tag_id_placeholders)s)
         GROUP BY %(tag)s.id, %(tag)s.name
+        %(min_count_sql)s
         ORDER BY %(tag)s.name ASC""" % {
             'tag': backend.quote_name(self.model._meta.db_table),
             'count_sql': counts and ', COUNT(%s.object_id)' % tagged_item_table or '',
@@ -141,10 +157,15 @@ class TagManager(Manager):
             'content_type_id': ContentType.objects.get_for_model(Model).id,
             'tag_id_placeholders': ','.join(['%s'] * tag_count),
             'tag_count': tag_count,
+            'min_count_sql': min_count is not None and ('HAVING COUNT(%s.object_id) >= %%s' % tagged_item_table) or '',
         }
 
+        params = [tag.id for tag in tags] * 2
+        if min_count is not None:
+            params.append(min_count)
+
         cursor = connection.cursor()
-        cursor.execute(query, [tag.id for tag in tags] * 2)
+        cursor.execute(query, params)
         related = []
         for row in cursor.fetchall():
             tag = self.model(*row[:2])
@@ -153,7 +174,7 @@ class TagManager(Manager):
             related.append(tag)
         return related
 
-    def cloud_for_model(self, Model, steps=4, distribution=LOGARITHMIC, filters=None):
+    def cloud_for_model(self, Model, steps=4, distribution=LOGARITHMIC, filters=None, min_count=None):
         """
         Obtain a list of tags associated with instances of the given
         Model, giving each tag a ``count`` attribute indicating how
@@ -168,12 +189,16 @@ class TagManager(Manager):
         be either ``tagging.utils.LOGARITHMIC`` or
         ``tagging.utils.LINEAR``.
 
-        To limit the tags and counts used to calculate the cloud to
-        those associated with a subset of the Model's instances, pass
-        a dictionary of field lookups to be applied to the given Model
-        as the ``filters`` argument.
+        To limit the tags displayed in the cloud to those associated
+        with a subset of the Model's instances, pass a dictionary of
+        field lookups to be applied to the given Model as the
+        ``filters`` argument.
+
+        To limit the tags displayed in the cloud to those with a
+        ``count`` greater than or equal to ``min_count``, pass a value
+        for the ``min_count`` argument.
         """
-        tags = list(self.usage_for_model(Model, counts=True, filters=filters))
+        tags = list(self.usage_for_model(Model, counts=True, filters=filters, min_count=min_count))
         return calculate_cloud(tags, steps)
 
     def _get_related_model_by_accessor(self, accessor):

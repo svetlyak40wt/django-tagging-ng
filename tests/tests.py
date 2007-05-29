@@ -200,10 +200,10 @@ ValidationError: [u'Tag names must be no longer than 50 characters.']
 >>> Tag.objects.usage_for_model(Parrot)
 []
 >>> parrot_details = (
-...     ('pining for the fjords', 9, True, 'foo bar'),
-...     ('passed on', 6, False, 'bar baz ter'),
-...     ('no more', 4, True, 'foo ter'),
-...     ('late', 2, False, 'bar ter'),
+...     ('pining for the fjords', 9, True,  'foo bar'),
+...     ('passed on',             6, False, 'bar baz ter'),
+...     ('no more',               4, True,  'foo ter'),
+...     ('late',                  2, False, 'bar ter'),
 ... )
 
 >>> for state, perch_size, perch_smelly, tags in parrot_details:
@@ -213,6 +213,8 @@ ValidationError: [u'Tag names must be no longer than 50 characters.']
 
 >>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_model(Parrot, counts=True)]
 [('bar', 3), ('baz', 1), ('foo', 2), ('ter', 3)]
+>>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_model(Parrot, min_count=2)]
+[('bar', 3), ('foo', 2), ('ter', 3)]
 
 # Limiting results to a subset of the model
 >>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_model(Parrot, counts=True, filters=dict(state='no more'))]
@@ -223,37 +225,35 @@ ValidationError: [u'Tag names must be no longer than 50 characters.']
 [('bar', 2), ('baz', 1), ('foo', 1), ('ter', 1)]
 >>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_model(Parrot, counts=True, filters=dict(perch__smelly=True))]
 [('bar', 1), ('foo', 2), ('ter', 1)]
+>>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_model(Parrot, min_count=2, filters=dict(perch__smelly=True))]
+[('foo', 2)]
 >>> [(tag.name, hasattr(tag, 'counts')) for tag in Tag.objects.usage_for_model(Parrot, filters=dict(perch__size__gt=4))]
 [('bar', False), ('baz', False), ('foo', False), ('ter', False)]
 >>> [(tag.name, hasattr(tag, 'counts')) for tag in Tag.objects.usage_for_model(Parrot, filters=dict(perch__size__gt=99))]
 []
 
 # Related tags
->>> tags = Tag.objects.related_for_model(Tag.objects.filter(name__in=['bar']), Parrot, counts=True)
->>> [(tag.name, tag.count) for tag in tags]
+>>> [(tag.name, tag.count) for tag in Tag.objects.related_for_model(Tag.objects.filter(name__in=['bar']), Parrot, counts=True)]
 [('baz', 1), ('foo', 1), ('ter', 2)]
->>> tags = Tag.objects.related_for_model(Tag.objects.filter(name__in=['bar']), Parrot, counts=False)
->>> [tag.name for tag in tags]
+>>> [(tag.name, tag.count) for tag in Tag.objects.related_for_model(Tag.objects.filter(name__in=['bar']), Parrot, min_count=2)]
+[('ter', 2)]
+>>> [tag.name for tag in Tag.objects.related_for_model(Tag.objects.filter(name__in=['bar']), Parrot, counts=False)]
 ['baz', 'foo', 'ter']
->>> tags = Tag.objects.related_for_model(Tag.objects.filter(name__in=['bar', 'ter']), Parrot, counts=True)
->>> [(tag.name, tag.count) for tag in tags]
+>>> [(tag.name, tag.count) for tag in Tag.objects.related_for_model(Tag.objects.filter(name__in=['bar', 'ter']), Parrot, counts=True)]
 [('baz', 1)]
->>> tags = Tag.objects.related_for_model(Tag.objects.filter(name__in=['bar', 'ter', 'baz']), Parrot, counts=True)
->>> [(tag.name, tag.count) for tag in tags]
+>>> [(tag.name, tag.count) for tag in Tag.objects.related_for_model(Tag.objects.filter(name__in=['bar', 'ter', 'baz']), Parrot, counts=True)]
 []
 
 # Once again, with feeling (strings)
->>> tags = Tag.objects.related_for_model('bar', Parrot, counts=True)
->>> [(tag.name, tag.count) for tag in tags]
+>>> [(tag.name, tag.count) for tag in Tag.objects.related_for_model('bar', Parrot, counts=True)]
 [('baz', 1), ('foo', 1), ('ter', 2)]
->>> tags = Tag.objects.related_for_model('bar', Parrot, counts=False)
->>> [tag.name for tag in tags]
+>>> [(tag.name, tag.count) for tag in Tag.objects.related_for_model('bar', Parrot, min_count=2)]
+[('ter', 2)]
+>>> [tag.name for tag in Tag.objects.related_for_model('bar', Parrot, counts=False)]
 ['baz', 'foo', 'ter']
->>> tags = Tag.objects.related_for_model(['bar', 'ter'], Parrot, counts=True)
->>> [(tag.name, tag.count) for tag in tags]
+>>> [(tag.name, tag.count) for tag in Tag.objects.related_for_model(['bar', 'ter'], Parrot, counts=True)]
 [('baz', 1)]
->>> tags = Tag.objects.related_for_model(['bar', 'ter', 'baz'], Parrot, counts=True)
->>> [(tag.name, tag.count) for tag in tags]
+>>> [(tag.name, tag.count) for tag in Tag.objects.related_for_model(['bar', 'ter', 'baz'], Parrot, counts=True)]
 []
 
 # Retrieving tagged objects by Model ##########################################
