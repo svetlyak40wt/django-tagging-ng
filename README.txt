@@ -60,7 +60,8 @@ functions:
       an object.
 
       ``tag_names`` is a string containing tag names with which
-      ``obj`` should be tagged. Tag names must be valid slugs.
+      ``obj`` should be tagged. Valid tag names may contain unicode
+      alphanumeric characters, numbers, underscores or hyphens.
       Multiple tag names may be specified, separated by any number of
       commas and spaces.
 
@@ -70,33 +71,41 @@ functions:
     * ``get_for_object(obj)`` -- Returns a ``QuerySet`` containing all
       ``Tag`` objects associated with ``obj``.
 
-    * ``usage_for_model(Model, counts=False, filters=None)`` --
-      Returns a list of ``Tag`` objects associated with instances of
-      ``Model``.
+    * ``usage_for_model(Model, counts=False, min_count=None, filters=None)``
+      -- Returns a list of ``Tag`` objects associated with instances
+      of ``Model``.
 
       If ``counts`` is ``True``, a ``count`` attribute will be added
       to each tag, indicating how many times it has been associated
       with instances of ``Model``.
+
+      If ``min_count`` is given, only tags which have a ``count``
+      greater than or equal to ``min_count`` will be returned. Passing
+      a value for ``min_count`` implies ``counts=True``.
 
       To limit the tags (and counts, if specified) returned to those
       used by a subset of the model's instances, pass a dictionary of
       field lookups to be applied to ``Model`` as the ``filters``
       argument.
 
-    * ``related_for_model(tags, Model, counts=False)`` -- Returns a
-      list of tags related to a given list of tags - that is, other
-      tags used by items which have all the given tags.
+    * ``related_for_model(tags, Model, counts=False, min_count=None)``
+      -- Returns a list of tags related to a given list of tags - that
+      is, other tags used by items which have all the given tags.
 
       If ``counts`` is ``True``, a ``count`` attribute will be added
       to each tag, indicating the number of items which have it in
       addition to the given list of tags.
 
+      If ``min_count`` is given, only tags which have a ``count``
+      greater than or equal to ``min_count`` will be returned. Passing
+      a value for ``min_count`` implies ``counts=True``.
+
     * ``cloud_for_model(Model, steps=4, distribution=LOGARITHMIC,
-      filters=None)`` -- Returns a list of the distinct ``Tag``
-      objects associated with instances of ``Model``, each having a
-      ``count`` attribute as above and an additional ``font_size``
-      attribute, for use in creation of a tag cloud (a type of
-      weighted list).
+      filters=None, min_count=None)`` -- Returns a list of the
+      distinct ``Tag`` objects associated with instances of ``Model``,
+      each having a ``count`` attribute as above and an additional
+      ``font_size`` attribute, for use in creation of a tag cloud (a
+      type of weighted list).
 
       ``steps`` defines the number of font sizes available -
       ``font_size`` may be an integer between ``1`` and ``steps``,
@@ -107,10 +116,14 @@ functions:
       be either ``tagging.utils.LOGARITHMIC`` or
       ``tagging.utils.LINEAR``.
 
-      To limit the tags and counts used to calculate the cloud to
-      those associated with a subset of the Model's instances, pass a
-      dictionary of field lookups to be applied to the given Model as
-      the ``filters`` argument.
+      To limit the tags displayed in the cloud to those associated
+      with a subset of the Model's instances, pass a dictionary of
+      field lookups to be applied to the given Model as the
+      ``filters`` argument.
+
+      To limit the tags displayed in the cloud to those with a
+      ``count`` greater than or equal to ``min_count``, pass a value
+      for the ``min_count`` argument.
 
 Basic usage
 -----------
@@ -163,6 +176,13 @@ model, pass in ``True`` for the ``counts`` argument::
     >>> tags = Tag.objects.usage_for_model(Widget, counts=True)
     >>> [(tag.name, tag.count) for tag in tags]
     [('cheese', 1), ('house', 2), ('thing', 1), ('toast', 1)]
+
+To get counts and limit the tags returned to those with counts above a
+certain size, pass in a ``min_count`` argument::
+
+    >>> tags = Tag.objects.usage_for_model(Widget, min_count=2)
+    >>> [(tag.name, tag.count) for tag in tags]
+    [('house', 2)]
 
 You can also specify a dictionary of `field lookups`_ to be used to
 restrict the tags and counts returned based on a subset of the
