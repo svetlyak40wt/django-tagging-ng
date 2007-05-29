@@ -33,5 +33,5 @@ class Article(models.Model):
     class Meta:
         ordering = ['name']
 
-class Widget(models.Model):
+class FormTest(models.Model):
     tags = TagField()
