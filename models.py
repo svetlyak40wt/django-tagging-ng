@@ -81,7 +81,7 @@ class TagManager(models.Manager):
             %%s
         WHERE %(tagged_item)s.content_type_id = %(content_type_id)s
             %%s
-        GROUP BY %(tag)s.id
+        GROUP BY %(tag)s.id, %(tag)s.name
         ORDER BY %(tag)s.name ASC""" % {
             'tag': backend.quote_name(Tag._meta.db_table),
             'count_sql': counts and (', COUNT(%s)' % model_pk) or '',
@@ -138,7 +138,7 @@ class TagManager(models.Manager):
               HAVING COUNT(%(tagged_item)s.object_id) = %(tag_count)s
           )
           AND %(tag)s.id NOT IN (%(tag_id_placeholders)s)
-        GROUP BY %(tag)s.id
+        GROUP BY %(tag)s.id, %(tag)s.name
         ORDER BY %(tag)s.name ASC""" % {
             'tag': backend.quote_name(Tag._meta.db_table),
             'count_sql': counts and ', COUNT(%s.object_id)' % tagged_item_table or '',
@@ -296,7 +296,7 @@ class TaggedItemManager(models.Manager):
             query += """
           AND related_tagged_item.object_id != %(tagged_item)s.object_id"""
         query += """
-        GROUP BY related_tagged_item.object_id
+        GROUP BY %(model_pk)s
         ORDER BY %(count)s DESC
         %(limit_offset)s"""
         query = query % {
