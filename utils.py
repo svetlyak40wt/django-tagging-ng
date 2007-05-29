@@ -56,7 +56,8 @@ def get_tag_list(tags):
                 contents.add('int')
         if len(contents) == 1:
             if 'string' in contents:
-                return Tag.objects.filter(name__in=tags)
+                enc = lambda s: isinstance(s, unicode) and s.encode(settings.DEFAULT_CHARSET) or s
+                return Tag.objects.filter(name__in=map(enc, tags))
             elif 'tag' in contents:
                 return tags
             elif 'int' in contents:
