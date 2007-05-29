@@ -1,4 +1,5 @@
 from django.db import models
+from tagging.fields import TagField
 
 class Perch(models.Model):
     size = models.IntegerField()
@@ -31,3 +32,6 @@ class Article(models.Model):
 
     class Meta:
         ordering = ['name']
+
+class Widget(models.Model):
+    tags = TagField()

@@ -305,8 +305,8 @@ Anders Pearson, `Scaling tag clouds`_.
 .. _`Scaling tag clouds`: http://thraxil.com/users/anders/posts/2005/12/13/scaling-tag-clouds/
 
 
-Fields
-======
+Model Fields
+============
 
 The ``tagging.fields`` module contains fields which make it easy to
 integrate tagging into your models and into the
@@ -347,6 +347,33 @@ This field will also validate that it has been given a valid list of
 tag names, separated by a single comma, a single space or a comma
 followed by a space, using the ``isTagList`` validator from
 ``tagging.validators``.
+
+
+Form Fields
+===========
+
+The ``tagging.forms`` module contains a ``Field`` for use with
+Django's `newforms library`_ which takes care of validating tag name
+input when used in your forms.
+
+.. _`newforms library`: http://www.djangoproject.com/documentation/newforms/
+
+Field types
+-----------
+
+``TagField``
+~~~~~~~~~~~~
+
+A form ``Field`` which is displayed as a single-line text input, which
+validates that the input it receives is a valid list of tag names,
+separated by a single comma, a single space or a comma followed by a
+space.
+
+When you generate a form for one of your models automatically, using
+the ``form_for_model`` or ``form_for_instance`` methods provided by
+the newforms library, any ``tagging.fields.TagField`` fields in your
+model will automatically be represented by a
+``tagging.forms.TagField`` in the generated form.
 
 
 Simplified tagging and retrieval of tags with properties
