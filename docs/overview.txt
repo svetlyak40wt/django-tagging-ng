@@ -454,6 +454,59 @@ Remember that ``obj.tags`` will return a ``QuerySet``, so you can
 perform further filtering on it, should you need to.
 
 
+Generic Views
+=============
+
+The ``tagging.views`` module contains views to handle common display
+ogic related to tagging.
+
+The following sample URLconf demonstrates using a generic view to list
+items of a particular model which have a given tag::
+
+    from django.conf.urls.defaults import *
+    from tagging.views import tagged_object_list
+    from shop.apps.products.models import Widget
+
+    urlpatterns = patterns('',
+        (r'^widgets/tag/(?P<tag>[^/]+(?u))/$', tagged_object_list,
+            dict(model=Widget, paginate_by=10, allow_empty=True,
+                 template_object_name='widget')),
+    )
+
+``tagging.views.tagged_object_list``
+------------------------------------
+
+**Description:**
+
+A view that displays a list of objects for a given model which have a
+given tag. This is a thin wrapper around the
+``django.views.generic.list_detail.object_list`` view, which takes a
+model and a tag as its arguments (in addition to the other optional
+arguments supported by ``object_list``), building the appropriate
+``QuerySet`` for you instead of expecting one to be passed in.
+
+**Required arguments:**
+
+    * ``model``: The Django model class of the object that will be
+      listed.
+
+    * ``tag``: The tag which objects of the given model must have in
+      order to be listed.
+
+**Optional arguments:**
+
+Please refer to the `object_list documentation`_ for the additional
+optional arguments which may be given.
+
+**Template context:**
+
+    * ``tag``: The ``Tag`` instance for the given tag.
+
+Please refer to the `object_list documentation`_ for  additional
+template context variables which may be provided.
+
+.. _`object_list documentation`: http://www.djangoproject.com/documentation/generic_views/#django-views-generic-list-detail-object-list
+
 Template tags
 =============
 

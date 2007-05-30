@@ -4,7 +4,7 @@ r"""
 >>> from django import newforms as forms
 >>> from tagging.models import Tag, TaggedItem
 >>> from tagging.tests.models import Article, Link, Perch, Parrot, FormTest
->>> from tagging.utils import calculate_cloud, get_tag_name_list, get_tag_list, LINEAR
+>>> from tagging.utils import calculate_cloud, get_tag_name_list, get_tag_list, get_tag, LINEAR
 >>> from tagging.validators import isTagList, isTag
 >>> from tagging.forms import TagField
 
@@ -30,7 +30,7 @@ r"""
 >>> get_tag_name_list('foo,ŠĐĆŽćžšđ')
 ['foo', '\xc5\xa0\xc4\x90\xc4\x86\xc5\xbd\xc4\x87\xc5\xbe\xc5\xa1\xc4\x91']
 
-# Tag objects
+# Normalised Tag list input
 >>> cheese = Tag.objects.create(name='cheese')
 >>> toast = Tag.objects.create(name='toast')
 >>> get_tag_list(cheese)
@@ -61,6 +61,15 @@ ValueError: If a list or tuple of tags is provided, they must all be tag names, 
 Traceback (most recent call last):
     ...
 ValueError: The tag input given was invalid
+
+# Normalised Tag input
+>>> get_tag(cheese)
+<Tag: cheese>
+>>> get_tag('cheese')
+<Tag: cheese>
+>>> get_tag(cheese.id)
+<Tag: cheese>
+>>> get_tag('mouse')
 
 # Tag clouds ##################################################################
 >>> tags = []
