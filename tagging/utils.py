@@ -19,7 +19,7 @@ def get_tag_name_list(tag_names):
 
 def get_tag_list(tags):
     """
-    Utility method for accepting tag input in a flexible manner.
+    Utility function for accepting tag input in a flexible manner.
 
     If a ``Tag`` object is given, it will be returned in a list as
     its single occupant.
@@ -66,6 +66,31 @@ def get_tag_list(tags):
             raise ValueError('If a list or tuple of tags is provided, they must all be tag names, Tag objects or Tag ids')
     else:
         raise ValueError('The tag input given was invalid')
+
+def get_tag(tag):
+    """
+    Utility function for accepting single tag input in a flexible
+    manner.
+
+    If a ``Tag`` object is given it will be returned as-is; if a
+    string or integer are given, they will be used to lookup the
+    appropriate ``Tag``.
+
+    If no matching tag can be found, ``None`` will be returned.
+    """
+    from tagging.models import Tag
+    if isinstance(tag, Tag):
+        return tag
+
+    try:
+        if isinstance(tag, types.StringTypes):
+            return Tag.objects.get(name=tag)
+        elif isinstance(tag, (types.IntType, types.LongType)):
+            return Tag.objects.get(id=tag)
+    except Tag.DoesNotExist:
+        pass
+
+    return None
 
 # Font size distribution algorithms
 LOGARITHMIC, LINEAR = 1, 2
