@@ -2,30 +2,44 @@
 Django Tagging
 ==============
 
-A generic tagging application for Django projects, which allows
+A generic tagging application for `Django`_ projects, which allows
 association of a number of tags with any ``Model`` instance and makes
 retrieval of tags simple.
+
+.. _`Django`: http://www.djangoproject.com
 
 
 Installation
 ============
 
-Google Code recommends doing the Subversion checkout like so::
+Downloading django-tagging
+--------------------------
 
-    svn checkout http://django-tagging.googlecode.com/svn/trunk/ django-tagging
+There are two options for downloading; one is to download the latest
+packaged version from http://code.google.com/p/django-tagging/ and
+unpack it; inside is a script called setup.py. Type this command::
 
-But the hyphen in the application name can cause issues installing
-into a DB, so it's really better to do this::
+    python setup.py install
 
-    svn checkout http://django-tagging.googlecode.com/svn/trunk/ tagging
+...and the package will install automatically.
 
-If you've already downloaded, rename the directory before installing.
+The other method is to perform a Subversion checkout from somewhere on
+your Python path:
 
-To install django-tagging, do the following:
+    svn checkout http://django-tagging.googlecode.com/svn/trunk/tagging/
 
-    1. Put the ``tagging`` folder somewhere on your Python path.
-    2. Put ``'tagging'`` in your ``INSTALLED_APPS`` setting.
-    3. Run the command ``manage.py syncdb``.
+Keep in mind that the current code in SVN may be different from the
+packaged release, and may contain bugs and backwards-incompatible
+changes.
+
+Using django-tagging in your projects
+-------------------------------------
+
+Once you've downloaded django-tagging and want to use it in your
+projects, do the following::
+
+    1. Put ``'tagging'`` in your ``INSTALLED_APPS`` setting.
+    2. Run the command ``manage.py syncdb``.
 
 The ``syncdb`` command creates the necessary database tables and
 creates permission objects for all installed apps that need them.
