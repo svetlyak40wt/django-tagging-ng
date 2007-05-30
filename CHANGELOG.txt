@@ -1,0 +1,12 @@
+========================
+Django Tagging Changelog
+========================
+
+
+Version 0.1, 30 May 2007:
+-------------------------
+
+Packaged from revision 79 in Subversion; download at
+http://django-tagging.googlecode.com/files/tagging-0.1.zip
+
+* First packaged version using distutils.
