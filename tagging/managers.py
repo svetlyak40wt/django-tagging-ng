@@ -19,7 +19,7 @@ class TagManager(Manager):
         """
         ctype = ContentType.objects.get_for_model(obj)
         current_tags = list(self.filter(items__content_type__pk=ctype.id,
-                                        items__object_id=obj.id))
+                                        items__object_id=obj._get_pk_val()))
         updated_tag_names = set(get_tag_name_list(tag_names))
 
         TaggedItemModel = self._get_related_model_by_accessor('items')
@@ -29,7 +29,7 @@ class TagManager(Manager):
                             if tag.name not in updated_tag_names]
         if len(tags_for_removal) > 0:
             TaggedItemModel._default_manager.filter(content_type__pk=ctype.id,
-                                                    object_id=obj.id,
+                                                    object_id=obj._get_pk_val(),
                                                     tag__in=tags_for_removal).delete()
 
         # Add new tags
@@ -46,7 +46,7 @@ class TagManager(Manager):
         """
         ctype = ContentType.objects.get_for_model(obj)
         return self.filter(items__content_type__pk=ctype.id,
-                           items__object_id=obj.id)
+                           items__object_id=obj._get_pk_val())
 
     def usage_for_model(self, Model, counts=False, min_count=None, filters=None):
         """
@@ -330,7 +330,7 @@ class TaggedItemManager(Manager):
         }
 
         cursor = connection.cursor()
-        cursor.execute(query, [obj.id])
+        cursor.execute(query, [obj._get_pk_val()])
         object_ids = [row[0] for row in cursor.fetchall()]
         if len(object_ids) > 0:
             # Use in_bulk here instead of an id__in lookup, because id__in would
