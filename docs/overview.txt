@@ -183,7 +183,7 @@ To retrieve all tags used for a particular model, use the
     >>> Tag.objects.update_tags(widget1, 'house thing')
     >>> widget2 = Widget.objects.get(pk=2)
     >>> Tag.objects.update_tags(widget2, 'cheese toast house')
-    >>> Tag.objects.get_for_model(Widget)
+    >>> Tag.objects.usage_for_model(Widget)
     [<Tag: cheese>, <Tag: house>, <Tag: thing>, <Tag: toast>]
 
 To get a count of how many times each tag was used for a particular
