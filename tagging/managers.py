@@ -224,7 +224,10 @@ class TaggedItemManager(Manager):
         associated with a given Tag or list of Tags.
         """
         tags = get_tag_list(tags)
-        if len(tags) == 1:
+        tag_count = len(tags)
+        if tag_count == 0:
+            return [] # No existing tags were given
+        elif tag_count == 1:
             tag = tags[0] # Optimisation for single tag
         else:
             return self.get_intersection_by_model(Model, tags)

@@ -306,6 +306,10 @@ ValidationError: [u'Tag names must be no longer than 50 characters.']
 >>> TaggedItem.objects.get_by_model(Parrot, ['bar', 'ter'])
 [<Parrot: late>, <Parrot: passed on>]
 
+# Issue 50 - Get by non-existent tag
+>>> TaggedItem.objects.get_by_model(Parrot, 'argatrons')
+[]
+
 # Retrieving related objects by Model #########################################
 
 # Related instances of the same Model
