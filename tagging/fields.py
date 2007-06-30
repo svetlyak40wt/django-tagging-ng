@@ -101,4 +101,4 @@ class TagField(CharField):
 
 # Helper
 def tags2str(tagset):
-    return ' '.join(t.name for t in tagset)
+    return ' '.join([t.name for t in tagset])
