@@ -20,15 +20,15 @@ r"""
 >>> get_tag_name_list('')
 []
 >>> get_tag_name_list('foo')
-['foo']
+[u'foo']
 >>> get_tag_name_list('foo bar')
-['foo', 'bar']
+[u'foo', u'bar']
 >>> get_tag_name_list('foo,bar')
-['foo', 'bar']
+[u'foo', u'bar']
 >>> get_tag_name_list(',  , foo   ,   bar ,  ,baz, , ,')
-['foo', 'bar', 'baz']
+[u'foo', u'bar', u'baz']
 >>> get_tag_name_list('foo,ŠĐĆŽćžšđ')
-['foo', '\xc5\xa0\xc4\x90\xc4\x86\xc5\xbd\xc4\x87\xc5\xbe\xc5\xa1\xc4\x91']
+[u'foo', u'\u0160\u0110\u0106\u017d\u0107\u017e\u0161\u0111']
 
 # Normalised Tag list input
 >>> cheese = Tag.objects.create(name='cheese')
@@ -45,7 +45,7 @@ r"""
 [<Tag: cheese>, <Tag: toast>]
 >>> get_tag_list([cheese.id,  toast.id])
 [<Tag: cheese>, <Tag: toast>]
->>> get_tag_list(['cheese',  'toast', u'ŠĐĆŽćžšđ'])
+>>> get_tag_list(['cheese',  'toast', 'ŠĐĆŽćžšđ'])
 [<Tag: cheese>, <Tag: toast>]
 >>> get_tag_list([cheese,  toast])
 [<Tag: cheese>, <Tag: toast>]
@@ -113,29 +113,29 @@ ValueError: Invalid font size distribution algorithm specified: cheese
 >>> isTagList('', {})
 Traceback (most recent call last):
     ...
-ValidationError: ['Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens, with a comma, space or comma followed by space used to separate each tag name.']
+ValidationError: [u'Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens, with a comma, space or comma followed by space used to separate each tag name.']
 >>> isTagList(' foo', {})
 Traceback (most recent call last):
     ...
-ValidationError: ['Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens, with a comma, space or comma followed by space used to separate each tag name.']
+ValidationError: [u'Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens, with a comma, space or comma followed by space used to separate each tag name.']
 >>> isTagList('foo ', {})
 Traceback (most recent call last):
     ...
-ValidationError: ['Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens, with a comma, space or comma followed by space used to separate each tag name.']
+ValidationError: [u'Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens, with a comma, space or comma followed by space used to separate each tag name.']
 >>> isTagList('foo  bar', {})
 Traceback (most recent call last):
     ...
-ValidationError: ['Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens, with a comma, space or comma followed by space used to separate each tag name.']
+ValidationError: [u'Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens, with a comma, space or comma followed by space used to separate each tag name.']
 >>> isTagList('foo qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbn bar', {})
 Traceback (most recent call last):
     ...
-ValidationError: ['Tag names must be no longer than 50 characters.']
+ValidationError: [u'Tag names must be no longer than 50 characters.']
 >>> isTag('f-o_1o', {})
 >>> isTag('ŠĐĆŽćžšđ', {})
 >>> isTag('f o o', {})
 Traceback (most recent call last):
     ...
-ValidationError: ['Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens.']
+ValidationError: [u'Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens.']
 
 ###############
 # Form Fields #
@@ -221,47 +221,47 @@ ValidationError: [u'Tag names must be no longer than 50 characters.']
 ...     Tag.objects.update_tags(parrot, tags)
 
 >>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_model(Parrot, counts=True)]
-[('bar', 3), ('baz', 1), ('foo', 2), ('ter', 3)]
+[(u'bar', 3), (u'baz', 1), (u'foo', 2), (u'ter', 3)]
 >>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_model(Parrot, min_count=2)]
-[('bar', 3), ('foo', 2), ('ter', 3)]
+[(u'bar', 3), (u'foo', 2), (u'ter', 3)]
 
 # Limiting results to a subset of the model
 >>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_model(Parrot, counts=True, filters=dict(state='no more'))]
-[('foo', 1), ('ter', 1)]
+[(u'foo', 1), (u'ter', 1)]
 >>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_model(Parrot, counts=True, filters=dict(state__startswith='p'))]
-[('bar', 2), ('baz', 1), ('foo', 1), ('ter', 1)]
+[(u'bar', 2), (u'baz', 1), (u'foo', 1), (u'ter', 1)]
 >>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_model(Parrot, counts=True, filters=dict(perch__size__gt=4))]
-[('bar', 2), ('baz', 1), ('foo', 1), ('ter', 1)]
+[(u'bar', 2), (u'baz', 1), (u'foo', 1), (u'ter', 1)]
 >>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_model(Parrot, counts=True, filters=dict(perch__smelly=True))]
-[('bar', 1), ('foo', 2), ('ter', 1)]
+[(u'bar', 1), (u'foo', 2), (u'ter', 1)]
 >>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_model(Parrot, min_count=2, filters=dict(perch__smelly=True))]
-[('foo', 2)]
+[(u'foo', 2)]
 >>> [(tag.name, hasattr(tag, 'counts')) for tag in Tag.objects.usage_for_model(Parrot, filters=dict(perch__size__gt=4))]
-[('bar', False), ('baz', False), ('foo', False), ('ter', False)]
+[(u'bar', False), (u'baz', False), (u'foo', False), (u'ter', False)]
 >>> [(tag.name, hasattr(tag, 'counts')) for tag in Tag.objects.usage_for_model(Parrot, filters=dict(perch__size__gt=99))]
 []
 
 # Related tags
 >>> [(tag.name, tag.count) for tag in Tag.objects.related_for_model(Tag.objects.filter(name__in=['bar']), Parrot, counts=True)]
-[('baz', 1), ('foo', 1), ('ter', 2)]
+[(u'baz', 1), (u'foo', 1), (u'ter', 2)]
 >>> [(tag.name, tag.count) for tag in Tag.objects.related_for_model(Tag.objects.filter(name__in=['bar']), Parrot, min_count=2)]
-[('ter', 2)]
+[(u'ter', 2)]
 >>> [tag.name for tag in Tag.objects.related_for_model(Tag.objects.filter(name__in=['bar']), Parrot, counts=False)]
-['baz', 'foo', 'ter']
+[u'baz', u'foo', u'ter']
 >>> [(tag.name, tag.count) for tag in Tag.objects.related_for_model(Tag.objects.filter(name__in=['bar', 'ter']), Parrot, counts=True)]
-[('baz', 1)]
+[(u'baz', 1)]
 >>> [(tag.name, tag.count) for tag in Tag.objects.related_for_model(Tag.objects.filter(name__in=['bar', 'ter', 'baz']), Parrot, counts=True)]
 []
 
 # Once again, with feeling (strings)
 >>> [(tag.name, tag.count) for tag in Tag.objects.related_for_model('bar', Parrot, counts=True)]
-[('baz', 1), ('foo', 1), ('ter', 2)]
+[(u'baz', 1), (u'foo', 1), (u'ter', 2)]
 >>> [(tag.name, tag.count) for tag in Tag.objects.related_for_model('bar', Parrot, min_count=2)]
-[('ter', 2)]
+[(u'ter', 2)]
 >>> [tag.name for tag in Tag.objects.related_for_model('bar', Parrot, counts=False)]
-['baz', 'foo', 'ter']
+[u'baz', u'foo', u'ter']
 >>> [(tag.name, tag.count) for tag in Tag.objects.related_for_model(['bar', 'ter'], Parrot, counts=True)]
-[('baz', 1)]
+[(u'baz', 1)]
 >>> [(tag.name, tag.count) for tag in Tag.objects.related_for_model(['bar', 'ter', 'baz'], Parrot, counts=True)]
 []
 

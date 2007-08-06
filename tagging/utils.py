@@ -1,21 +1,24 @@
-import math, re, types
-from django.conf import settings
+import math
+import re
+import types
+
 from django.db.models.query import QuerySet
+from django.utils.encoding import force_unicode, smart_unicode
 
 # Python 2.3 compatibility
 if not hasattr(__builtins__, 'set'):
     from sets import Set as set
 
-find_tag_re = re.compile('[-\w]+', re.U)
+find_tag_re = re.compile(r'[-\w]+', re.U)
 
 def get_tag_name_list(tag_names):
     """
-    Find tag names in the given string and return them as a list.
+    Finds tag names in the given string and return them as a list.
     """
-    if not isinstance(tag_names, unicode) and tag_names is not None:
-        tag_names = tag_names.decode(settings.DEFAULT_CHARSET)
+    if tag_names is not None:
+        tag_names = force_unicode(tag_names)
     results = find_tag_re.findall(tag_names or '')
-    return [item.encode(settings.DEFAULT_CHARSET) for item in results]
+    return results
 
 def get_tag_list(tags):
     """
@@ -56,16 +59,16 @@ def get_tag_list(tags):
                 contents.add('int')
         if len(contents) == 1:
             if 'string' in contents:
-                enc = lambda s: isinstance(s, unicode) and s.encode(settings.DEFAULT_CHARSET) or s
-                return Tag.objects.filter(name__in=map(enc, tags))
+                return Tag.objects.filter(name__in=[smart_unicode(tag) \
+                                                    for tag in tags])
             elif 'tag' in contents:
                 return tags
             elif 'int' in contents:
                 return Tag.objects.filter(id__in=tags)
         else:
-            raise ValueError('If a list or tuple of tags is provided, they must all be tag names, Tag objects or Tag ids')
+            raise ValueError(u'If a list or tuple of tags is provided, they must all be tag names, Tag objects or Tag ids')
     else:
-        raise ValueError('The tag input given was invalid')
+        raise ValueError(u'The tag input given was invalid')
 
 def get_tag(tag):
     """
@@ -126,7 +129,7 @@ def calculate_cloud(tags, steps=4, distribution=LOGARITHMIC):
             delta = (max_weight - min_weight) / float(steps)
             thresholds = [min_weight + i * delta for i in range(1, steps + 1)]
         else:
-            raise ValueError('Invalid font size distribution algorithm specified: %s' % distribution)
+            raise ValueError(u'Invalid font size distribution algorithm specified: %s' % distribution)
 
         for tag in tags:
             font_set = False

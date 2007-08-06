@@ -2,10 +2,12 @@
 Custom Managers for generic tagging Models.
 """
 import types
+
 from django.db import backend, connection
 from django.db.models import Manager
 from django.db.models.query import QuerySet, parse_lookup
 from django.contrib.contenttypes.models import ContentType
+
 from tagging.utils import calculate_cloud, get_tag_name_list, get_tag_list, LOGARITHMIC
 
 # Python 2.3 compatibility

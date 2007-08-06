@@ -3,6 +3,7 @@ Models for generic tagging.
 """
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
+
 from tagging.managers import TagManager, TaggedItemManager
 from tagging.validators import isTag
 
@@ -29,7 +30,7 @@ class Tag(models.Model):
     class Admin:
         pass
 
-    def __str__(self):
+    def __unicode__(self):
         return self.name
 
 class TaggedItem(models.Model):
@@ -53,5 +54,5 @@ class TaggedItem(models.Model):
     class Admin:
         pass
 
-    def __str__(self):
-        return '%s [%s]' % (self.object, self.tag)
+    def __unicode__(self):
+        return u'%s [%s]' % (self.object, self.tag)

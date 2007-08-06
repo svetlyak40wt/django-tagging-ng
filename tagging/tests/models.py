@@ -1,4 +1,5 @@
 from django.db import models
+
 from tagging.fields import TagField
 
 class Perch(models.Model):
@@ -9,7 +10,7 @@ class Parrot(models.Model):
     state = models.CharField(maxlength=50)
     perch = models.ForeignKey(Perch, null=True)
 
-    def __str__(self):
+    def __unicode__(self):
         return self.state
 
     class Meta:
@@ -18,7 +19,7 @@ class Parrot(models.Model):
 class Link(models.Model):
     name = models.CharField(maxlength=50)
 
-    def __str__(self):
+    def __unicode__(self):
         return self.name
 
     class Meta:
@@ -27,7 +28,7 @@ class Link(models.Model):
 class Article(models.Model):
     name = models.CharField(maxlength=50)
 
-    def __str__(self):
+    def __unicode__(self):
         return self.name
 
     class Meta:

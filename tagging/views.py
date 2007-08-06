@@ -1,5 +1,6 @@
 from django.http import Http404
 from django.views.generic.list_detail import object_list
+
 from tagging.models import TaggedItem
 from tagging.utils import get_tag
 
@@ -18,17 +19,17 @@ def tagged_object_list(request, model=None, tag=None, **kwargs):
         try:
             model = kwargs['model']
         except KeyError:
-            raise AttributeError, 'tagged_object_list must be called with a model'
+            raise AttributeError(u'tagged_object_list must be called with a model')
 
     if tag is None:
         try:
             tag = kwargs['tag']
         except KeyError:
-            raise AttributeError, 'tagged_object_list must be called with a tag'
+            raise AttributeError(u'tagged_object_list must be called with a tag')
 
     tag_instance = get_tag(tag)
     if tag_instance is None:
-        raise Http404, 'No Tag found matching "%s"' % tag
+        raise Http404(u'No Tag found matching "%s"' % tag)
     queryset = TaggedItem.objects.get_by_model(model, tag_instance)
     if not kwargs.has_key('extra_context'):
         kwargs['extra_context'] = {}
