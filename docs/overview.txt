@@ -457,6 +457,8 @@ perform further filtering on it, should you need to.
 Generic Views
 =============
 
+**New in django-tagging development version**
+
 The ``tagging.views`` module contains views to handle common display
 ogic related to tagging.
 
