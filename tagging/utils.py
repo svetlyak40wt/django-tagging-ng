@@ -66,9 +66,9 @@ def get_tag_list(tags):
             elif 'int' in contents:
                 return Tag.objects.filter(id__in=tags)
         else:
-            raise ValueError(u'If a list or tuple of tags is provided, they must all be tag names, Tag objects or Tag ids')
+            raise ValueError(u'If a list or tuple of tags is provided, they must all be tag names, Tag objects or Tag ids.')
     else:
-        raise ValueError(u'The tag input given was invalid')
+        raise ValueError(u'The tag input given was invalid.')
 
 def get_tag(tag):
     """
@@ -129,7 +129,7 @@ def calculate_cloud(tags, steps=4, distribution=LOGARITHMIC):
             delta = (max_weight - min_weight) / float(steps)
             thresholds = [min_weight + i * delta for i in range(1, steps + 1)]
         else:
-            raise ValueError(u'Invalid font size distribution algorithm specified: %s' % distribution)
+            raise ValueError(u'Invalid font size distribution algorithm specified: %s.' % distribution)
 
         for tag in tags:
             font_set = False
