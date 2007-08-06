@@ -1,8 +1,9 @@
-from django.db.models.fields import CharField
-from tagging.validators import isTagList
-from tagging.models import Tag
-from django.dispatch import dispatcher
 from django.db.models import signals
+from django.db.models.fields import CharField
+from django.dispatch import dispatcher
+
+from tagging.models import Tag
+from tagging.validators import isTagList
 
 class TagField(CharField):
     """
@@ -101,4 +102,4 @@ class TagField(CharField):
 
 # Helper
 def tags2str(tagset):
-    return ' '.join([t.name for t in tagset])
+    return u' '.join([t.name for t in tagset])

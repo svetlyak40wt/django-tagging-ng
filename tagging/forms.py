@@ -1,4 +1,5 @@
 from django import newforms as forms
+
 from tagging.utils import get_tag_name_list
 from tagging.validators import tag_list_re
 
