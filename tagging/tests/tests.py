@@ -56,11 +56,11 @@ r"""
 >>> get_tag_list(['cheese', toast])
 Traceback (most recent call last):
     ...
-ValueError: If a list or tuple of tags is provided, they must all be tag names, Tag objects or Tag ids
+ValueError: If a list or tuple of tags is provided, they must all be tag names, Tag objects or Tag ids.
 >>> get_tag_list(29)
 Traceback (most recent call last):
     ...
-ValueError: The tag input given was invalid
+ValueError: The tag input given was invalid.
 
 # Normalised Tag input
 >>> get_tag(cheese)
@@ -98,7 +98,7 @@ ValueError: The tag input given was invalid
 >>> calculate_cloud(tags, steps=5, distribution='cheese')
 Traceback (most recent call last):
     ...
-ValueError: Invalid font size distribution algorithm specified: cheese
+ValueError: Invalid font size distribution algorithm specified: cheese.
 
 ##############
 # Validators #
