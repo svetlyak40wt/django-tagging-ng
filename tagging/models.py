@@ -2,16 +2,11 @@
 Models for generic tagging.
 """
 from django.db import models
+from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
 
 from tagging.managers import TagManager, TaggedItemManager
 from tagging.validators import isTag
-
-# Generic relations were moved in Django revision 5172
-try:
-    from django.contrib.contenttypes import generic
-except ImportError:
-    import django.db.models as generic
 
 class Tag(models.Model):
     """
