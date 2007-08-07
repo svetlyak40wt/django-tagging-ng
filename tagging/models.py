@@ -17,7 +17,7 @@ class Tag(models.Model):
     """
     A basic tag.
     """
-    name = models.CharField(maxlength=50, unique=True, db_index=True, validator_list=[isTag])
+    name = models.CharField(max_length=50, unique=True, db_index=True, validator_list=[isTag])
 
     objects = TagManager()
 

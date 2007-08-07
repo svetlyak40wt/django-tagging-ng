@@ -7,7 +7,7 @@ class Perch(models.Model):
     smelly = models.BooleanField(default=True)
 
 class Parrot(models.Model):
-    state = models.CharField(maxlength=50)
+    state = models.CharField(max_length=50)
     perch = models.ForeignKey(Perch, null=True)
 
     def __unicode__(self):
@@ -17,7 +17,7 @@ class Parrot(models.Model):
         ordering = ['state']
 
 class Link(models.Model):
-    name = models.CharField(maxlength=50)
+    name = models.CharField(max_length=50)
 
     def __unicode__(self):
         return self.name
@@ -26,7 +26,7 @@ class Link(models.Model):
         ordering = ['name']
 
 class Article(models.Model):
-    name = models.CharField(maxlength=50)
+    name = models.CharField(max_length=50)
 
     def __unicode__(self):
         return self.name
