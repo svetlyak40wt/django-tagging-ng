@@ -12,7 +12,7 @@ class TagField(CharField):
     the splitting/reordering/etc. under the hood.
     """
     def __init__(self, **kwargs):
-        kwargs['maxlength'] = kwargs.get('maxlength', 255)
+        kwargs['max_length'] = kwargs.get('max_length', 255)
         kwargs['blank'] = kwargs.get('blank', True)
         kwargs['validator_list'] = [isTagList] + kwargs.get('validator_list', [])
         super(TagField, self).__init__(**kwargs)
