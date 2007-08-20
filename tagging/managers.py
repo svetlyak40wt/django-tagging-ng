@@ -3,7 +3,7 @@ Custom Managers for generic tagging Models.
 """
 import types
 
-from django.db import backend, connection
+from django.db import connection
 from django.db.models import Manager
 from django.db.models.query import QuerySet, parse_lookup
 from django.contrib.contenttypes.models import ContentType
@@ -13,6 +13,8 @@ from tagging.utils import calculate_cloud, get_tag_name_list, get_tag_list, LOGA
 # Python 2.3 compatibility
 if not hasattr(__builtins__, 'set'):
     from sets import Set as set
+
+qn = connection.ops.quote_name
 
 class TagManager(Manager):
     def update_tags(self, obj, tag_names):
@@ -71,8 +73,8 @@ class TagManager(Manager):
         if filters is None: filters = {}
         if min_count is not None: counts = True
 
-        model_table = backend.quote_name(Model._meta.db_table)
-        model_pk = '%s.%s' % (model_table, backend.quote_name(Model._meta.pk.column))
+        model_table = qn(Model._meta.db_table)
+        model_pk = '%s.%s' % (model_table, qn(Model._meta.pk.column))
         query = """
         SELECT DISTINCT %(tag)s.id, %(tag)s.name%(count_sql)s
         FROM
@@ -87,9 +89,9 @@ class TagManager(Manager):
         GROUP BY %(tag)s.id, %(tag)s.name
         %%s
         ORDER BY %(tag)s.name ASC""" % {
-            'tag': backend.quote_name(self.model._meta.db_table),
+            'tag': qn(self.model._meta.db_table),
             'count_sql': counts and (', COUNT(%s)' % model_pk) or '',
-            'tagged_item': backend.quote_name(self._get_related_model_by_accessor('items')._meta.db_table),
+            'tagged_item': qn(self._get_related_model_by_accessor('items')._meta.db_table),
             'model': model_table,
             'model_pk': model_pk,
             'content_type_id': ContentType.objects.get_for_model(Model).id,
@@ -134,7 +136,7 @@ class TagManager(Manager):
         if min_count is not None: counts = True
         tags = get_tag_list(tags)
         tag_count = len(tags)
-        tagged_item_table = backend.quote_name(self._get_related_model_by_accessor('items')._meta.db_table)
+        tagged_item_table = qn(self._get_related_model_by_accessor('items')._meta.db_table)
         query = """
         SELECT %(tag)s.id, %(tag)s.name%(count_sql)s
         FROM %(tagged_item)s INNER JOIN %(tag)s ON %(tagged_item)s.tag_id = %(tag)s.id
@@ -153,7 +155,7 @@ class TagManager(Manager):
         GROUP BY %(tag)s.id, %(tag)s.name
         %(min_count_sql)s
         ORDER BY %(tag)s.name ASC""" % {
-            'tag': backend.quote_name(self.model._meta.db_table),
+            'tag': qn(self.model._meta.db_table),
             'count_sql': counts and ', COUNT(%s.object_id)' % tagged_item_table or '',
             'tagged_item': tagged_item_table,
             'content_type_id': ContentType.objects.get_for_model(Model).id,
@@ -234,14 +236,14 @@ class TaggedItemManager(Manager):
         else:
             return self.get_intersection_by_model(Model, tags)
         ctype = ContentType.objects.get_for_model(Model)
-        rel_table = backend.quote_name(self.model._meta.db_table)
+        rel_table = qn(self.model._meta.db_table)
         return Model._default_manager.extra(
             tables=[self.model._meta.db_table], # Use a non-explicit join
             where=[
                 '%s.content_type_id = %%s' % rel_table,
                 '%s.tag_id = %%s' % rel_table,
-                '%s.%s = %s.object_id' % (backend.quote_name(Model._meta.db_table),
-                                          backend.quote_name(Model._meta.pk.column),
+                '%s.%s = %s.object_id' % (qn(Model._meta.db_table),
+                                          qn(Model._meta.pk.column),
                                           rel_table)
             ],
             params=[ctype.id, tag.id],
@@ -266,7 +268,7 @@ class TaggedItemManager(Manager):
         """
         tags = get_tag_list(tags)
         tag_count = len(tags)
-        model_table = backend.quote_name(Model._meta.db_table)
+        model_table = qn(Model._meta.db_table)
         # This query selects the ids of all objects which have all the
         # given tags.
         query = """
@@ -277,9 +279,9 @@ class TaggedItemManager(Manager):
           AND %(model_pk)s = %(tagged_item)s.object_id
         GROUP BY %(model_pk)s
         HAVING COUNT(%(model_pk)s) = %(tag_count)s""" % {
-            'model_pk': '%s.%s' % (model_table, backend.quote_name(Model._meta.pk.column)),
+            'model_pk': '%s.%s' % (model_table, qn(Model._meta.pk.column)),
             'model': model_table,
-            'tagged_item': backend.quote_name(self.model._meta.db_table),
+            'tagged_item': qn(self.model._meta.db_table),
             'content_type_id': ContentType.objects.get_for_model(Model).id,
             'tag_id_placeholders': ','.join(['%s'] * tag_count),
             'tag_count': tag_count,
@@ -302,7 +304,7 @@ class TaggedItemManager(Manager):
         If ``num`` is given, a maximum of ``num`` instances will be
         returned.
         """
-        model_table = backend.quote_name(Model._meta.db_table)
+        model_table = qn(Model._meta.db_table)
         content_type = ContentType.objects.get_for_model(obj)
         related_content_type = ContentType.objects.get_for_model(Model)
         query = """
@@ -324,14 +326,14 @@ class TaggedItemManager(Manager):
         ORDER BY %(count)s DESC
         %(limit_offset)s"""
         query = query % {
-            'model_pk': '%s.%s' % (model_table, backend.quote_name(Model._meta.pk.column)),
-            'count': backend.quote_name('count'),
+            'model_pk': '%s.%s' % (model_table, qn(Model._meta.pk.column)),
+            'count': qn('count'),
             'model': model_table,
-            'tagged_item': backend.quote_name(self.model._meta.db_table),
-            'tag': backend.quote_name(self.model._meta.get_field('tag').rel.to._meta.db_table),
+            'tagged_item': qn(self.model._meta.db_table),
+            'tag': qn(self.model._meta.get_field('tag').rel.to._meta.db_table),
             'content_type_id': content_type.id,
             'related_content_type_id': related_content_type.id,
-            'limit_offset': num is not None and backend.get_limit_offset_sql(num) or '',
+            'limit_offset': num is not None and connection.ops.limit_offset_sql(num) or '',
         }
 
         cursor = connection.cursor()
