@@ -514,8 +514,17 @@ arguments supported by ``object_list``), building the appropriate
 
 **Optional arguments:**
 
-Please refer to the `object_list documentation`_ for the additional
-optional arguments which may be given.
+Please refer to the `object_list documentation`_ for additional optional
+arguments which may be given.
+
+    * ``related_tags``: If ``True``, a ``related_tags`` context variable
+      will also contain tags related to the given tag for the given
+      model.
+
+    * ``related_tag_counts``: If ``True`` and ``related_tags`` is
+      ``True``, each related tag will have a ``count`` attribute
+      indicating the number of items which have it in addition to the
+      given tag.
 
 **Template context:**
 
