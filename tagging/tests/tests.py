@@ -204,6 +204,19 @@ ValidationError: [u'Tag names must be no longer than 50 characters.']
 >>> Tag.objects.get_for_object(dead)
 []
 
+# Using a model's TagField
+>>> f1 = FormTest.objects.create(tags=u'test3 test2 test1')
+>>> Tag.objects.get_for_object(f1)
+[<Tag: test1>, <Tag: test2>, <Tag: test3>]
+>>> f1.tags = u'test4'
+>>> f1.save()
+>>> Tag.objects.get_for_object(f1)
+[<Tag: test4>]
+>>> f1.tags = ''
+>>> f1.save()
+>>> Tag.objects.get_for_object(f1)
+[]
+
 # Retrieving tags by Model ####################################################
 
 >>> Tag.objects.usage_for_model(Parrot)
