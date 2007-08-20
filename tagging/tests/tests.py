@@ -2,6 +2,7 @@
 r"""
 >>> import os
 >>> from django import newforms as forms
+>>> from tagging import settings
 >>> from tagging.models import Tag, TaggedItem
 >>> from tagging.tests.models import Article, Link, Perch, Parrot, FormTest
 >>> from tagging.utils import calculate_cloud, get_tag_name_list, get_tag_list, get_tag, LINEAR
@@ -216,6 +217,22 @@ ValidationError: [u'Tag names must be no longer than 50 characters.']
 >>> f1.save()
 >>> Tag.objects.get_for_object(f1)
 []
+
+# Forcing tags to lowercase
+>>> settings.FORCE_LOWERCASE_TAGS = True
+>>> Tag.objects.update_tags(dead, 'foO bAr Ter')
+>>> Tag.objects.get_for_object(dead)
+[<Tag: bar>, <Tag: foo>, <Tag: ter>]
+>>> Tag.objects.update_tags(dead, 'foO bAr baZ')
+>>> Tag.objects.get_for_object(dead)
+[<Tag: bar>, <Tag: baz>, <Tag: foo>]
+>>> Tag.objects.update_tags(dead, None)
+>>> f1.tags = u'TEST5'
+>>> f1.save()
+>>> Tag.objects.get_for_object(f1)
+[<Tag: test5>]
+>>> f1.tags
+u'test5'
 
 # Retrieving tags by Model ####################################################
 
