@@ -8,6 +8,7 @@ from django.db.models import Manager
 from django.db.models.query import QuerySet, parse_lookup
 from django.contrib.contenttypes.models import ContentType
 
+from tagging import settings
 from tagging.utils import calculate_cloud, get_tag_name_list, get_tag_list, LOGARITHMIC
 
 # Python 2.3 compatibility
@@ -25,6 +26,8 @@ class TagManager(Manager):
         current_tags = list(self.filter(items__content_type__pk=ctype.id,
                                         items__object_id=obj._get_pk_val()))
         updated_tag_names = set(get_tag_name_list(tag_names))
+        if settings.FORCE_LOWERCASE_TAGS:
+            updated_tag_names = [t.lower() for t in updated_tag_names]
 
         TaggedItemModel = self._get_related_model_by_accessor('items')
 

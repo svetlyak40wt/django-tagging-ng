@@ -47,6 +47,23 @@ creates permission objects for all installed apps that need them.
 That's it!
 
 
+Settings
+========
+
+Some of django-tagging's behaviour may be configured by adding the
+appropriate settings to your project's settings file.
+
+The following settings are available:
+
+FORCE_LOWERCASE_TAGS
+--------------------
+
+Default: ``False``
+
+A boolean that turns on/off forcing of tags to lowercase before they
+are saved to the database.
+
+
 Tags
 ====
 

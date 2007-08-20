@@ -2,6 +2,7 @@ from django.db.models import signals
 from django.db.models.fields import CharField
 from django.dispatch import dispatcher
 
+from tagging import settings
 from tagging.models import Tag
 from tagging.validators import isTagList
 
@@ -63,7 +64,10 @@ class TagField(CharField):
         """
         if instance is None:
             raise AttributeError('%s can only be set on instances.' % self.name)
-        self._set_instance_tag_cache(instance, value)
+        if settings.FORCE_LOWERCASE_TAGS:
+            self._set_instance_tag_cache(instance, value.lower())
+        else:
+            self._set_instance_tag_cache(instance, value)
 
     def _save(self, signal, sender, instance):
         """
@@ -87,7 +91,7 @@ class TagField(CharField):
 
     def _set_instance_tag_cache(self, instance, tags):
         """
-        Helper: set and instance's tag cache.
+        Helper: set an instance's tag cache.
         """
         setattr(instance, '_%s_cache' % self.attname, tags)
 
