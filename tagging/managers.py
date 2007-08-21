@@ -10,6 +10,7 @@ from django.contrib.contenttypes.models import ContentType
 
 from tagging import settings
 from tagging.utils import calculate_cloud, get_tag_name_list, get_tag_list, LOGARITHMIC
+from tagging.validators import tag_re
 
 # Python 2.3 compatibility
 if not hasattr(__builtins__, 'set'):
@@ -45,6 +46,20 @@ class TagManager(Manager):
             if tag_name not in current_tag_names:
                 tag, created = self.get_or_create(name=tag_name)
                 TaggedItemModel._default_manager.create(tag=tag, object=obj)
+
+    def add_tag(self, obj, tag_name):
+        """
+        Associates the given object with a tag.
+        """
+        if not tag_re.match(tag_name):
+            raise AttributeError(u'An invalid tag name was given: %s. Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens.' % tag_name)
+        if settings.FORCE_LOWERCASE_TAGS:
+            tag_name = tag_name.lower()
+        tag, created = self.get_or_create(name=tag_name)
+        ctype = ContentType.objects.get_for_model(obj)
+        TaggedItemModel = self._get_related_model_by_accessor('items')
+        TaggedItemModel._default_manager.get_or_create(
+            tag=tag, content_type=ctype, object_id=obj._get_pk_val())
 
     def get_for_object(self, obj):
         """

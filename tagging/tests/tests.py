@@ -194,6 +194,16 @@ ValidationError: [u'Tag names must be no longer than 50 characters.']
 >>> Tag.objects.update_tags(dead, 'foo bar baz')
 >>> Tag.objects.get_for_object(dead)
 [<Tag: bar>, <Tag: baz>, <Tag: foo>]
+>>> Tag.objects.add_tag(dead, 'foo')
+>>> Tag.objects.get_for_object(dead)
+[<Tag: bar>, <Tag: baz>, <Tag: foo>]
+>>> Tag.objects.add_tag(dead, 'zip')
+>>> Tag.objects.get_for_object(dead)
+[<Tag: bar>, <Tag: baz>, <Tag: foo>, <Tag: zip>]
+>>> Tag.objects.add_tag(dead, 'f o o')
+Traceback (most recent call last):
+    ...
+AttributeError: An invalid tag name was given: f o o. Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens.
 
 # Note that doctest in Python 2.4 (and maybe 2.5?) doesn't support non-ascii
 # characters in output, so we're displaying the repr() here.
@@ -226,6 +236,12 @@ ValidationError: [u'Tag names must be no longer than 50 characters.']
 >>> Tag.objects.update_tags(dead, 'foO bAr baZ')
 >>> Tag.objects.get_for_object(dead)
 [<Tag: bar>, <Tag: baz>, <Tag: foo>]
+>>> Tag.objects.add_tag(dead, 'FOO')
+>>> Tag.objects.get_for_object(dead)
+[<Tag: bar>, <Tag: baz>, <Tag: foo>]
+>>> Tag.objects.add_tag(dead, 'Zip')
+>>> Tag.objects.get_for_object(dead)
+[<Tag: bar>, <Tag: baz>, <Tag: foo>, <Tag: zip>]
 >>> Tag.objects.update_tags(dead, None)
 >>> f1.tags = u'TEST5'
 >>> f1.save()

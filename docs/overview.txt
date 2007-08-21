@@ -100,6 +100,12 @@ functions:
       If ``tag_names`` is ``None`` or ``''``, the object's tags will
       be cleared.
 
+    * ``add_tag(obj, tag_name)`` -- Associates a tag with an an object.
+
+      ``tag_name`` is a string containing a tag name with which
+      ``obj`` should be tagged. Valid tag names may contain unicode
+      alphanumeric characters, numbers, underscores or hyphens.
+
     * ``get_for_object(obj)`` -- Returns a ``QuerySet`` containing all
       ``Tag`` objects associated with ``obj``.
 
@@ -177,11 +183,14 @@ function::
     [<Tag: house>, <Tag: thing>]
 
 Tags are created, associated and unassociated accordingly when you use
-``update_tags``::
+``update_tags`` and ``add_tags``::
 
     >>> Tag.objects.update_tags(widget, 'house monkey')
     >>> Tag.objects.get_for_object(widget)
     [<Tag: house>, <Tag: monkey>]
+    >>> Tag.objects.add_tag(widget, 'tiles')
+    >>> Tag.objects.get_for_object(widget)
+    [<Tag: house>, <Tag: monkey>, <Tag: tiles>]
 
 Clear an object's tags by passing ``None`` or ``''`` to
 ``update_tags``::
