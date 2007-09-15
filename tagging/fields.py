@@ -64,7 +64,7 @@ class TagField(CharField):
         """
         if instance is None:
             raise AttributeError('%s can only be set on instances.' % self.name)
-        if settings.FORCE_LOWERCASE_TAGS:
+        if settings.FORCE_LOWERCASE_TAGS and value is not None:
             self._set_instance_tag_cache(instance, value.lower())
         else:
             self._set_instance_tag_cache(instance, value)
