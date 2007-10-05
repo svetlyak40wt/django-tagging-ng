@@ -34,7 +34,7 @@ class TaggedItem(models.Model):
     """
     tag = models.ForeignKey(Tag, related_name='items')
     content_type = models.ForeignKey(ContentType)
-    object_id = models.PositiveIntegerField()
+    object_id = models.PositiveIntegerField(db_index=True)
     object = generic.GenericForeignKey('content_type', 'object_id')
 
     objects = TaggedItemManager()
