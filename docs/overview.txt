@@ -537,12 +537,13 @@ arguments which may be given.
 
 **Template context:**
 
-    * ``tag``: The ``Tag`` instance for the given tag.
-
 Please refer to the `object_list documentation`_ for  additional
 template context variables which may be provided.
 
+    * ``tag``: The ``Tag`` instance for the given tag.
+
 .. _`object_list documentation`: http://www.djangoproject.com/documentation/generic_views/#django-views-generic-list-detail-object-list
+
 
 Template tags
 =============
