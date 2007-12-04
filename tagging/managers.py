@@ -313,6 +313,38 @@ class TaggedItemManager(Manager):
         else:
             return Model._default_manager.none()
 
+    def get_union_by_model(self, Model, tags):
+        """
+        Create a queryset matching instances of the given Model
+        associated with any of the given list of Tags.
+        """
+        tags = get_tag_list(tags)
+        tag_count = len(tags)
+        model_table = qn(Model._meta.db_table)
+        # This query selects the ids of all objects which have any of
+        # the given tags.
+        query = """
+        SELECT %(model_pk)s
+        FROM %(model)s, %(tagged_item)s
+        WHERE %(tagged_item)s.content_type_id = %(content_type_id)s
+          AND %(tagged_item)s.tag_id IN (%(tag_id_placeholders)s)
+          AND %(model_pk)s = %(tagged_item)s.object_id
+        GROUP BY %(model_pk)s""" % {
+            'model_pk': '%s.%s' % (model_table, qn(Model._meta.pk.column)),
+            'model': model_table,
+            'tagged_item': qn(self.model._meta.db_table),
+            'content_type_id': ContentType.objects.get_for_model(Model).id,
+            'tag_id_placeholders': ','.join(['%s'] * tag_count),
+        }
+
+        cursor = connection.cursor()
+        cursor.execute(query, [tag.id for tag in tags])
+        object_ids = [row[0] for row in cursor.fetchall()]
+        if len(object_ids) > 0:
+            return Model._default_manager.filter(pk__in=object_ids)
+        else:
+            return Model._default_manager.none()
+
     def get_related(self, obj, Model, num=None):
         """
         Retrieve instances of ``Model`` which share tags with the
