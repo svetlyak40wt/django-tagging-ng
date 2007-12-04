@@ -279,6 +279,10 @@ helper functions:
       you pass it a list, so it's recommended that you use
       ``get_by_model`` instead of calling this function directly.
 
+    * ``get_union_by_model(Model, tags)`` -- Returns a
+      ``QuerySet`` containing all instances of ``Model`` which are
+      tagged with any tag in the list.
+
     * ``get_related(obj, Model, num=None)`` - Returns instances of
        ``Model`` which share tags with the model instance ``obj``,
        ordered by the number of shared tags in descending order.
