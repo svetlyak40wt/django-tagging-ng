@@ -356,6 +356,12 @@ u'test5'
 >>> TaggedItem.objects.get_by_model(Parrot, 'argatrons')
 []
 
+# Unions
+>>> TaggedItem.objects.get_union_by_model(Parrot, ['foo', 'ter'])
+[<Parrot: late>, <Parrot: no more>, <Parrot: passed on>, <Parrot: pining for the fjords>]
+>>> TaggedItem.objects.get_union_by_model(Parrot, ['bar', 'baz'])
+[<Parrot: late>, <Parrot: passed on>, <Parrot: pining for the fjords>]
+
 # Retrieving related objects by Model #########################################
 
 # Related instances of the same Model
