@@ -221,7 +221,7 @@ class TagManager(Manager):
         for the ``min_count`` argument.
         """
         tags = list(self.usage_for_model(Model, counts=True, filters=filters, min_count=min_count))
-        return calculate_cloud(tags, steps)
+        return calculate_cloud(tags, steps, distribution)
 
     def _get_related_model_by_accessor(self, accessor):
         """
