@@ -248,9 +248,11 @@ class TaggedItemManager(Manager):
         tags = get_tag_list(tags)
         tag_count = len(tags)
         if tag_count == 0:
-            return [] # No existing tags were given
+            # No existing tags were given
+            return Model._default_manager.none()
         elif tag_count == 1:
-            tag = tags[0] # Optimisation for single tag
+            # Optimisation for single tag
+            tag = tags[0]
         else:
             return self.get_intersection_by_model(Model, tags)
         ctype = ContentType.objects.get_for_model(Model)
