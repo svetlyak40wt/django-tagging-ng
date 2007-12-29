@@ -86,7 +86,7 @@ ValueError: The tag input given was invalid.
 
 # This isn't a pre-calculated test, just making sure it's consistent
 >>> sizes
-{1: 48, 2: 20, 3: 24, 4: 19, 5: 11}
+{1: 48, 2: 30, 3: 19, 4: 15, 5: 10}
 
 >>> sizes = {}
 >>> for tag in calculate_cloud(tags, steps=5, distribution=LINEAR):
@@ -99,7 +99,7 @@ ValueError: The tag input given was invalid.
 >>> calculate_cloud(tags, steps=5, distribution='cheese')
 Traceback (most recent call last):
     ...
-ValueError: Invalid font size distribution algorithm specified: cheese.
+ValueError: Invalid distribution algorithm specified: cheese.
 
 ##############
 # Validators #
