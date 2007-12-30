@@ -3,6 +3,39 @@ Django Tagging Changelog
 ========================
 
 
+SVN Trunk Changes:
+------------------
+
+* Fixed a bug in calculation of logarithmic tag clouds - ``font_size``
+  attributes were not being set in some cases when the least used tag in
+  the cloud had been used more than once.
+
+* For consistency of return type, ``TaggedItemManager.get_by_model`` now
+  returns an empty ``QuerySet`` instead of an empty ``list`` if
+  non-existent tags were given.
+
+* Fixed a bug caused by ``cloud_for_model`` not passing its
+  ``distribution`` argument to ``calculate_cloud``.
+
+* Added ``TaggedItemManager.get_union_by_model`` for looking up items
+  tagged with any one of a list of tags.
+
+* Added ``TagManager.add_tag`` for adding a single extra tag to an
+  object.
+
+* Tag names can now be forced to lowercase before they are saved to the
+  database by adding the appropriate ``FORCE_LOWERCASE_TAGS`` setting to
+  your project's settings module. This feature defaults to being off.
+
+* Fixed a bug where passing non-existent tag names to
+  ``TaggedItemManager.get_by_model`` caused database errors with some
+  backends.
+
+* Added ``tagged_object_list`` generic view for displaying paginated
+  lists of objects for a given model which have a given tag, and
+  optionally related tags for that model.
+
+
 Version 0.1, 30 May 2007:
 -------------------------
 
