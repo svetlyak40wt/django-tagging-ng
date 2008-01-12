@@ -640,7 +640,7 @@ list items of a particular model class which have a given tag::
    from shop.apps.products.models import Widget
 
    urlpatterns = patterns('',
-       url(r'^widgets/tag/(?P<tag>[^/]+(?u))/$',
+       url(r'^widgets/tag/(?P<tag>[^/]+)/$',
            tagged_object_list,
            dict(model=Widget, paginate_by=10, allow_empty=True,
                 template_object_name='widget'),
