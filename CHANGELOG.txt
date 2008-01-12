@@ -6,7 +6,7 @@ Django Tagging Changelog
 SVN Trunk Changes:
 ------------------
 
-* Added a ``get_cloud_for_model`` template tag.
+* Added a ``tag_cloud_for_model`` template tag.
 
 * Added a ``MAX_TAG_LENGTH`` setting.
 
