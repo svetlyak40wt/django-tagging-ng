@@ -6,6 +6,22 @@ Django Tagging Changelog
 SVN Trunk Changes:
 ------------------
 
+* Added a ``get_cloud_for_model`` template tag.
+
+* Added a ``MAX_TAG_LENGTH`` setting.
+
+* Multi-word tags are here - simple space-delimited input still works.
+  Double quotes and/or commas are used to delineate multi- word tags.
+  As far as valid tag contents - anything goes, at least initially.
+
+* BACKWARDS-INCOMPATIBLE CHANGE - ``django.utils.get_tag_name_list`` and
+  related regular expressions have been removed in favour of a new tag
+  input parsing function, ``django.utils.parse_tag_input``.
+
+* BACKWARDS-INCOMPATIBLE CHANGE - ``Tag`` and ``TaggedItem`` no longer
+  declare an explicit ``db_table``. If you can't rename your tables,
+  you'll have to put these back in manually.
+
 * Fixed a bug in calculation of logarithmic tag clouds - ``font_size``
   attributes were not being set in some cases when the least used tag in
   the cloud had been used more than once.

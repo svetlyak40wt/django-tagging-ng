@@ -2,12 +2,13 @@
 r"""
 >>> import os
 >>> from django import newforms as forms
+>>> from tagging.forms import TagField
 >>> from tagging import settings
 >>> from tagging.models import Tag, TaggedItem
 >>> from tagging.tests.models import Article, Link, Perch, Parrot, FormTest
->>> from tagging.utils import calculate_cloud, get_tag_name_list, get_tag_list, get_tag, LINEAR
+>>> from tagging.utils import calculate_cloud, get_tag_list, get_tag, parse_tag_input
+>>> from tagging.utils import LINEAR
 >>> from tagging.validators import isTagList, isTag
->>> from tagging.forms import TagField
 
 #############
 # Utilities #
@@ -15,42 +16,90 @@ r"""
 
 # Tag input ###################################################################
 
-# Tag names
->>> get_tag_name_list(None)
-[]
->>> get_tag_name_list('')
-[]
->>> get_tag_name_list('foo')
-[u'foo']
->>> get_tag_name_list('foo bar')
-[u'foo', u'bar']
->>> get_tag_name_list('foo,bar')
-[u'foo', u'bar']
->>> get_tag_name_list(',  , foo   ,   bar ,  ,baz, , ,')
-[u'foo', u'bar', u'baz']
->>> get_tag_name_list('foo,ŠĐĆŽćžšđ')
-[u'foo', u'\u0160\u0110\u0106\u017d\u0107\u017e\u0161\u0111']
+# Simple space-delimited tags
+>>> parse_tag_input('one')
+[u'one']
+>>> parse_tag_input('one two')
+[u'one', u'two']
+>>> parse_tag_input('one two three')
+[u'one', u'two', u'three']
 
-# Normalised Tag list input
+# Comma-delimited multiple words - an unquoted comma in the input will trigger
+# this.
+>>> parse_tag_input(',one')
+[u'one']
+>>> parse_tag_input(',one two')
+[u'one two']
+>>> parse_tag_input(',one two three')
+[u'one two three']
+>>> parse_tag_input('a-one, a-two and a-three')
+[u'a-one', u'a-two and a-three']
+
+# Double-quoted multiple words - a completed quote will trigger this.
+# Unclosed quotes are ignored.
+>>> parse_tag_input('"one')
+[u'one']
+>>> parse_tag_input('"one two')
+[u'one', u'two']
+>>> parse_tag_input('"one two three')
+[u'one', u'three', u'two']
+>>> parse_tag_input('"one two"')
+[u'one two']
+>>> parse_tag_input('a-one "a-two and a-three"')
+[u'a-one', u'a-two and a-three']
+
+# No loose commas - split on spaces
+>>> parse_tag_input('one two "thr,ee"')
+[u'one', u'thr,ee', u'two']
+
+# Loose commas - split on commas
+>>> parse_tag_input('"one", two three')
+[u'one', u'two three']
+
+# Double quotes can contain commas
+>>> parse_tag_input('a-one "a-two, and a-three"')
+[u'a-one', u'a-two, and a-three']
+>>> parse_tag_input('"two", one, one, two, "one"')
+[u'one', u'two']
+
+# Bad users! Naughty users!
+>>> parse_tag_input(None)
+[]
+>>> parse_tag_input('')
+[]
+>>> parse_tag_input('"')
+[]
+>>> parse_tag_input('""')
+[]
+>>> parse_tag_input('"' * 7)
+[]
+>>> parse_tag_input(',,,,,,')
+[]
+>>> parse_tag_input('",",",",",",","')
+[u',']
+>>> parse_tag_input('a-one "a-two" and "a-three')
+[u'a-one', u'a-three', u'a-two', u'and']
+
+# Normalised Tag list input ###################################################
 >>> cheese = Tag.objects.create(name='cheese')
 >>> toast = Tag.objects.create(name='toast')
 >>> get_tag_list(cheese)
 [<Tag: cheese>]
 >>> get_tag_list('cheese toast')
 [<Tag: cheese>, <Tag: toast>]
->>> get_tag_list(u'cheese toast')
+>>> get_tag_list('cheese,toast')
 [<Tag: cheese>, <Tag: toast>]
 >>> get_tag_list([])
 []
->>> get_tag_list(['cheese',  'toast'])
+>>> get_tag_list(['cheese', 'toast'])
 [<Tag: cheese>, <Tag: toast>]
->>> get_tag_list([cheese.id,  toast.id])
+>>> get_tag_list([cheese.id, toast.id])
 [<Tag: cheese>, <Tag: toast>]
->>> get_tag_list(['cheese',  'toast', 'ŠĐĆŽćžšđ'])
+>>> get_tag_list(['cheese', 'toast', 'ŠĐĆŽćžšđ'])
 [<Tag: cheese>, <Tag: toast>]
->>> get_tag_list([cheese,  toast])
+>>> get_tag_list([cheese, toast])
 [<Tag: cheese>, <Tag: toast>]
->>> get_tag_list((cheese,  toast))
+>>> get_tag_list((cheese, toast))
 (<Tag: cheese>, <Tag: toast>)
 >>> get_tag_list(Tag.objects.filter(name__in=['cheese', 'toast']))
 [<Tag: cheese>, <Tag: toast>]
@@ -101,85 +150,23 @@ Traceback (most recent call last):
     ...
 ValueError: Invalid distribution algorithm specified: cheese.
 
-##############
-# Validators #
-##############
+# Validators ##################################################################
 
->>> isTagList('foo', {})
->>> isTagList('foo bar baz', {})
->>> isTagList('foo,bar,baz', {})
->>> isTagList('foo, bar, baz', {})
->>> isTagList('foo, ŠĐĆŽćžšđ, baz', {})
->>> isTagList('foo qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvb bar', {})
->>> isTagList('', {})
-Traceback (most recent call last):
-    ...
-ValidationError: [u'Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens, with a comma, space or comma followed by space used to separate each tag name.']
->>> isTagList(' foo', {})
-Traceback (most recent call last):
-    ...
-ValidationError: [u'Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens, with a comma, space or comma followed by space used to separate each tag name.']
->>> isTagList('foo ', {})
-Traceback (most recent call last):
-    ...
-ValidationError: [u'Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens, with a comma, space or comma followed by space used to separate each tag name.']
->>> isTagList('foo  bar', {})
-Traceback (most recent call last):
-    ...
-ValidationError: [u'Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens, with a comma, space or comma followed by space used to separate each tag name.']
 >>> isTagList('foo qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbn bar', {})
 Traceback (most recent call last):
     ...
-ValidationError: [u'Tag names must be no longer than 50 characters.']
->>> isTag('f-o_1o', {})
->>> isTag('ŠĐĆŽćžšđ', {})
+ValidationError: [u'Each tag may be no more than 50 characters long.']
+
+>>> isTag('"test"', {})
+>>> isTag(',test', {})
 >>> isTag('f o o', {})
 Traceback (most recent call last):
     ...
-ValidationError: [u'Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens.']
-
-###############
-# Form Fields #
-###############
-
->>> t = TagField()
->>> t.clean('foo')
-u'foo'
->>> t.clean('foo bar baz')
-u'foo bar baz'
->>> t.clean('foo,bar,baz')
-u'foo,bar,baz'
->>> t.clean('foo, bar, baz')
-u'foo, bar, baz'
->>> t.clean('foo qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvb bar')
-u'foo qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvb bar'
->>> t.clean(' foo')
+ValidationError: [u'Multiple tags were given.']
+>>> isTagList('foo qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbn bar', {})
 Traceback (most recent call last):
     ...
-ValidationError: [u'Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens, with a comma, space or comma followed by space used to separate each tag name.']
->>> t.clean('foo ')
-Traceback (most recent call last):
-    ...
-ValidationError: [u'Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens, with a comma, space or comma followed by space used to separate each tag name.']
->>> t.clean('foo  bar')
-Traceback (most recent call last):
-    ...
-ValidationError: [u'Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens, with a comma, space or comma followed by space used to separate each tag name.']
->>> t.clean('foo qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbn bar')
-Traceback (most recent call last):
-    ...
-ValidationError: [u'Tag names must be no longer than 50 characters.']
-
-# Ensure that automatically created forms use TagField
->>> TestForm = forms.form_for_model(FormTest)
->>> form = TestForm()
->>> form.fields['tags'].__class__.__name__
-'TagField'
->>> instance = FormTest(tags='one two three')
->>> TestInstanceForm = forms.form_for_instance(instance)
->>> form = TestInstanceForm()
->>> form.fields['tags'].__class__.__name__
-'TagField'
+ValidationError: [u'Each tag may be no more than 50 characters long.']
 
 ###########
 # Tagging #
@@ -188,10 +175,10 @@ ValidationError: [u'Tag names must be no longer than 50 characters.']
 # Basic tagging ###############################################################
 
 >>> dead = Parrot.objects.create(state='dead')
->>> Tag.objects.update_tags(dead, 'foo bar ter')
+>>> Tag.objects.update_tags(dead, 'foo,bar,"ter"')
 >>> Tag.objects.get_for_object(dead)
 [<Tag: bar>, <Tag: foo>, <Tag: ter>]
->>> Tag.objects.update_tags(dead, 'foo bar baz')
+>>> Tag.objects.update_tags(dead, '"foo" bar "baz"')
 >>> Tag.objects.get_for_object(dead)
 [<Tag: bar>, <Tag: baz>, <Tag: foo>]
 >>> Tag.objects.add_tag(dead, 'foo')
@@ -200,10 +187,14 @@ ValidationError: [u'Tag names must be no longer than 50 characters.']
 >>> Tag.objects.add_tag(dead, 'zip')
 >>> Tag.objects.get_for_object(dead)
 [<Tag: bar>, <Tag: baz>, <Tag: foo>, <Tag: zip>]
->>> Tag.objects.add_tag(dead, 'f o o')
+>>> Tag.objects.add_tag(dead, '    ')
 Traceback (most recent call last):
     ...
-AttributeError: An invalid tag name was given: f o o. Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens.
+AttributeError: No tags were given: "    ".
+>>> Tag.objects.add_tag(dead, 'one two')
+Traceback (most recent call last):
+    ...
+AttributeError: Multiple tags were given: "one two".
 
 # Note that doctest in Python 2.4 (and maybe 2.5?) doesn't support non-ascii
 # characters in output, so we're displaying the repr() here.
@@ -387,4 +378,55 @@ u'test5'
 >>> Tag.objects.update_tags(a1, 'tag6')
 >>> TaggedItem.objects.get_related(a1, Link)
 []
+
+################
+# Model Fields #
+################
+
+# TagField ####################################################################
+
+# Ensure that automatically created forms use TagField
+>>> class TestForm(forms.ModelForm):
+...     class Meta:
+...         model = FormTest
+>>> form = TestForm()
+>>> form.fields['tags'].__class__.__name__
+'TagField'
+
+# Recreating string representaions of tag lists ###############################
+>>> plain = Tag.objects.create(name='plain')
+>>> spaces = Tag.objects.create(name='spa ces')
+>>> comma = Tag.objects.create(name='com,ma')
+
+>>> from tagging.utils import edit_string_for_tags
+>>> edit_string_for_tags([plain])
+u'plain'
+>>> edit_string_for_tags([plain, spaces])
+u'plain, spa ces'
+>>> edit_string_for_tags([plain, spaces, comma])
+u'plain, spa ces, "com,ma"'
+>>> edit_string_for_tags([plain, comma])
+u'plain "com,ma"'
+>>> edit_string_for_tags([comma, spaces])
+u'"com,ma", spa ces'
+
+###############
+# Form Fields #
+###############
+
+>>> t = TagField()
+>>> t.clean('foo')
+u'foo'
+>>> t.clean('foo bar baz')
+u'foo bar baz'
+>>> t.clean('foo,bar,baz')
+u'foo,bar,baz'
+>>> t.clean('foo, bar, baz')
+u'foo, bar, baz'
+>>> t.clean('foo qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvb bar')
+u'foo qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvb bar'
+>>> t.clean('foo qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbn bar')
+Traceback (most recent call last):
+    ...
+ValidationError: [u'Each tag may be no more than 50 characters long.']
 """
