@@ -47,7 +47,7 @@ Alternatively, if you'd like to update Django Tagging occasionally to pick
 up the latest bug fixes and enhancements before they make it into an
 offical release, perform a `Subversion`_ checkout instead. The following
 command will check the application's development branch out to an
-``mptt-trunk`` directory::
+``tagging-trunk`` directory::
 
    svn checkout http://django-tagging.googlecode.com/svn/trunk/ tagging-trunk
 
