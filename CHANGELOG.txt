@@ -6,6 +6,13 @@ Django Tagging Changelog
 SVN Trunk Changes:
 ------------------
 
+
+Version 0.2, 12th Jan 2008:
+---------------------------
+
+Packaged from revision 122 in Subversion; download at
+http://django-tagging.googlecode.com/files/tagging-0.2.zip
+
 * Added a ``tag_cloud_for_model`` template tag.
 
 * Added a ``MAX_TAG_LENGTH`` setting.
@@ -52,8 +59,8 @@ SVN Trunk Changes:
   optionally related tags for that model.
 
 
-Version 0.1, 30 May 2007:
--------------------------
+Version 0.1, 30th May 2007:
+---------------------------
 
 Packaged from revision 79 in Subversion; download at
 http://django-tagging.googlecode.com/files/tagging-0.1.zip
