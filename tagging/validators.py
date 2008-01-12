@@ -1,33 +1,30 @@
-import re
-
+"""
+Oldforms validators for tagging related fields - these are still
+required for basic ``django.contrib.admin`` application field validation
+until the ``newforms-admin`` branch lands in trunk.
+"""
 from django.core.validators import ValidationError
-from django.utils.encoding import smart_unicode
+from django.utils.translation import ugettext as _
 
-from tagging.utils import get_tag_name_list
-
-tag_re = re.compile(r'^[-\w]+$', re.U)
-tag_list_re = re.compile(r'^[-\w]+(?:(?:,\s|[,\s])[-\w]+)*$', re.U)
+from tagging import settings
+from tagging.utils import parse_tag_input
 
 def isTagList(field_data, all_data):
     """
-    Validates that ``field_data`` is a valid list of tag names,
-    separated by a single comma, a single space or a comma followed
-    by a space.
+    Validates that ``field_data`` is a valid list of tags.
     """
-    if field_data is not None:
-        field_data = smart_unicode(field_data)
-    if not tag_list_re.search(field_data):
-        raise ValidationError(u'Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens, with a comma, space or comma followed by space used to separate each tag name.')
-    tag_names = get_tag_name_list(field_data)
-    for tag_name in tag_names:
-        if len(tag_name) > 50:
-            raise ValidationError(u'Tag names must be no longer than 50 characters.')
+    for tag_name in parse_tag_input(field_data):
+        if len(tag_name) > settings.MAX_TAG_LENGTH:
+            raise ValidationError(
+                _('Each tag may be no more than %s characters long.') % settings.MAX_TAG_LENGTH)
 
 def isTag(field_data, all_data):
     """
-    Validates that ``field_data`` is a valid tag name.
+    Validates that ``field_data`` is a valid tag.
     """
-    if field_data is not None:
-        field_data = smart_unicode(field_data)
-    if not tag_re.match(field_data):
-        raise ValidationError(u'Tag names must contain only unicode alphanumeric characters, numbers, underscores or hyphens.')
+    tag_names = parse_tag_input(field_data)
+    if len(tag_names) > 1:
+        raise ValidationError(_('Multiple tags were given.'))
+    elif len(tag_names[0]) > settings.MAX_TAG_LENGTH:
+        raise ValidationError(
+            _('A tag may be no more than %s characters long.') % settings.MAX_TAG_LENGTH)

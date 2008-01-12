@@ -1,24 +1,126 @@
+"""
+Tagging utilities - from user tag input parsing to tag cloud
+calculation.
+"""
 import math
-import re
 import types
 
 from django.db.models.query import QuerySet
-from django.utils.encoding import force_unicode, smart_unicode
+from django.utils.encoding import force_unicode
+from django.utils.translation import ugettext as _
 
 # Python 2.3 compatibility
 if not hasattr(__builtins__, 'set'):
     from sets import Set as set
 
-find_tag_re = re.compile(r'[-\w]+', re.U)
+def parse_tag_input(input):
+    """
+    Parses tag input, with multiple word input being activated and
+    delineated by commas and double quotes. Quotes take precedence, so
+    they may contain commas.
 
-def get_tag_name_list(tag_names):
+    Returns a sorted list of unique tag names.
     """
-    Finds tag names in the given string and return them as a list.
+    if not input:
+        return []
+
+    input = force_unicode(input)
+
+    # Special case - if there are no commas or double quotes in the
+    # input, we don't *do* a recall... I mean, we know we only need to
+    # split on spaces.
+    if u',' not in input and u'"' not in input:
+        return split_strip(input, u' ')
+
+    words = []
+    buffer = []
+    # Defer splitting of non-quoted sections until we know if there are
+    # any unquoted commas.
+    to_be_split = []
+    saw_loose_comma = False
+    open_quote = False
+    i = iter(input)
+    try:
+        while 1:
+            c = i.next()
+            if c == u'"':
+                if buffer:
+                    to_be_split.append(u''.join(buffer))
+                    buffer = []
+                # Find the matching quote
+                open_quote = True
+                c = i.next()
+                while c != u'"':
+                    buffer.append(c)
+                    c = i.next()
+                if buffer:
+                    word = u''.join(buffer).strip()
+                    if word:
+                        words.append(word)
+                    buffer = []
+                open_quote = False
+            else:
+                if not saw_loose_comma and c == u',':
+                    saw_loose_comma = True
+                buffer.append(c)
+    except StopIteration:
+        # If we were parsing an open quote which was never closed treat
+        # the buffer as unquoted.
+        if buffer:
+            if open_quote and u',' in buffer:
+                saw_loose_comma = True
+            to_be_split.append(u''.join(buffer))
+    if to_be_split:
+        if saw_loose_comma:
+            delimiter = u','
+        else:
+            delimiter = u' '
+        for chunk in to_be_split:
+            words.extend(split_strip(chunk, delimiter))
+    words = list(set(words))
+    words.sort()
+    return words
+
+def split_strip(input, delimiter=u','):
     """
-    if tag_names is not None:
-        tag_names = force_unicode(tag_names)
-    results = find_tag_re.findall(tag_names or '')
-    return results
+    Splits ``input`` on ``delimiter``, stripping each resulting string
+    and returning a list of non-empty strings.
+    """
+    if not input:
+        return []
+
+    words = [w.strip() for w in input.split(delimiter)]
+    return [w for w in words if w]
+
+def edit_string_for_tags(tags):
+    """
+    Given list of ``Tag`` instances, creates a string representation of
+    the list suitable for editing by the user, such that submitting the
+    given string representation back without changing it will give the
+    same list of tags.
+
+    Tag names which contain commas will be double quoted.
+
+    If any tag name which isn't being quoted contains whitespace, the
+    resulting string of tag names will be comma-delimited, otherwise
+    it will be space-delimited.
+    """
+    names = []
+    use_commas = False
+    for tag in tags:
+        name = tag.name
+        if u',' in name:
+            names.append('"%s"' % name)
+            continue
+        elif u' ' in name:
+            if not use_commas:
+                use_commas = True
+        names.append(name)
+    if use_commas:
+        glue = u', '
+    else:
+        glue = u' '
+    return glue.join(names)
 
 def get_tag_list(tags):
     """
@@ -30,14 +132,15 @@ def get_tag_list(tags):
     If given, the tag names in the following will be used to create a
     ``Tag`` ``QuerySet``:
 
-        * A string, which may contain multiple tag names.
-        * A list or tuple of strings corresponding to tag names.
-        * A list or tuple of integers corresponding to tag ids.
+       * A string, which may contain multiple tag names.
+       * A list or tuple of strings corresponding to tag names.
+       * A list or tuple of integers corresponding to tag ids.
 
     If given, the following will be returned as-is:
 
-        * A list or tuple of ``Tag`` objects.
-        * A ``Tag`` ``QuerySet``.
+       * A list or tuple of ``Tag`` objects.
+       * A ``Tag`` ``QuerySet``.
+
     """
     from tagging.models import Tag
     if isinstance(tags, Tag):
@@ -45,7 +148,7 @@ def get_tag_list(tags):
     elif isinstance(tags, QuerySet) and tags.model is Tag:
         return tags
     elif isinstance(tags, types.StringTypes):
-        return Tag.objects.filter(name__in=get_tag_name_list(tags))
+        return Tag.objects.filter(name__in=parse_tag_input(tags))
     elif isinstance(tags, (types.ListType, types.TupleType)):
         if len(tags) == 0:
             return tags
@@ -59,16 +162,16 @@ def get_tag_list(tags):
                 contents.add('int')
         if len(contents) == 1:
             if 'string' in contents:
-                return Tag.objects.filter(name__in=[smart_unicode(tag) \
+                return Tag.objects.filter(name__in=[force_unicode(tag) \
                                                     for tag in tags])
             elif 'tag' in contents:
                 return tags
             elif 'int' in contents:
                 return Tag.objects.filter(id__in=tags)
         else:
-            raise ValueError(u'If a list or tuple of tags is provided, they must all be tag names, Tag objects or Tag ids.')
+            raise ValueError(_('If a list or tuple of tags is provided, they must all be tag names, Tag objects or Tag ids.'))
     else:
-        raise ValueError(u'The tag input given was invalid.')
+        raise ValueError(_('The tag input given was invalid.'))
 
 def get_tag(tag):
     """
@@ -113,7 +216,7 @@ def _calculate_tag_weight(weight, max_weight, distribution):
         return weight
     elif distribution == LOGARITHMIC:
         return math.log(weight) * max_weight / math.log(max_weight)
-    raise ValueError(u'Invalid distribution algorithm specified: %s.' % distribution)
+    raise ValueError(_('Invalid distribution algorithm specified: %s.') % distribution)
 
 def calculate_cloud(tags, steps=4, distribution=LOGARITHMIC):
     """

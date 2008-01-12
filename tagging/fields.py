@@ -1,9 +1,14 @@
+"""
+A custom Model Field for tagging.
+"""
 from django.db.models import signals
 from django.db.models.fields import CharField
 from django.dispatch import dispatcher
+from django.utils.translation import ugettext_lazy as _
 
 from tagging import settings
 from tagging.models import Tag
+from tagging.utils import edit_string_for_tags
 from tagging.validators import isTagList
 
 class TagField(CharField):
@@ -32,30 +37,31 @@ class TagField(CharField):
         Tag getter. Returns an instance's tags if accessed on an instance, and
         all of a model's tags if called on a class. That is, this model::
 
-            class Link(models.Model):
-                ...
-                tags = TagField()
+           class Link(models.Model):
+               ...
+               tags = TagField()
 
         Lets you do both of these::
 
-            >>> l = Link.objects.get(...)
-            >>> l.tags
-            'tag1 tag2 tag3'
+           >>> l = Link.objects.get(...)
+           >>> l.tags
+           'tag1 tag2 tag3'
 
-            >>> Link.tags
-            'tag1 tag2 tag3 tag4'
+           >>> Link.tags
+           'tag1 tag2 tag3 tag4'
 
         """
         # Handle access on the model (i.e. Link.tags)
         if instance is None:
-            return tags2str(Tag.objects.usage_for_model(owner))
+            return edit_string_for_tags(Tag.objects.usage_for_model(owner))
 
         tags = self._get_instance_tag_cache(instance)
         if tags is None:
-            if instance._get_pk_val() is None:
+            if instance.pk is None:
                 self._set_instance_tag_cache(instance, '')
             else:
-                self._set_instance_tag_cache(instance, tags2str(Tag.objects.get_for_object(instance)))
+                self._set_instance_tag_cache(
+                    instance, edit_string_for_tags(Tag.objects.get_for_object(instance)))
         return self._get_instance_tag_cache(instance)
 
     def __set__(self, instance, value):
@@ -63,18 +69,17 @@ class TagField(CharField):
         Set an object's tags.
         """
         if instance is None:
-            raise AttributeError('%s can only be set on instances.' % self.name)
+            raise AttributeError(_('%s can only be set on instances.') % self.name)
         if settings.FORCE_LOWERCASE_TAGS and value is not None:
-            self._set_instance_tag_cache(instance, value.lower())
-        else:
-            self._set_instance_tag_cache(instance, value)
+            value = value.lower()
+        self._set_instance_tag_cache(instance, value)
 
     def _save(self, signal, sender, instance):
         """
         Save tags back to the database
         """
         tags = self._get_instance_tag_cache(instance)
-        if tags is not None :
+        if tags is not None:
             Tag.objects.update_tags(instance, tags)
 
     def __delete__(self, instance):
@@ -103,7 +108,3 @@ class TagField(CharField):
         defaults = {'form_class': forms.TagField}
         defaults.update(kwargs)
         return super(TagField, self).formfield(**defaults)
-
-# Helper
-def tags2str(tagset):
-    return u' '.join([t.name for t in tagset])
