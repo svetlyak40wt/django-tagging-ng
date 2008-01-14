@@ -6,6 +6,9 @@ Django Tagging Changelog
 SVN Trunk Changes:
 ------------------
 
+* Removed ``tagging\tests\runtests.py``, as tests can be run with
+  ``django-admin.py test --settings=tagging.tests.settings``.
+
 * A ``tagging.TagDescriptor`` is now added to models when registered.
   This returns a ``tagging.managers.ModelTagManager`` when accessed on a
   model class, and provide access to and control over tags when used on
