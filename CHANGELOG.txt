@@ -6,6 +6,13 @@ Django Tagging Changelog
 SVN Trunk Changes:
 ------------------
 
+* Added ``tagging.register`` to register models with the tagging app.
+  Initially, a ``tagging.managers.ModelTaggedItemManager`` is added for
+  convenient access to tagged items.
+
+* Moved ``TagManager`` and ``TaggedItemManager`` to ``models.py`` - gets
+  rid of some import related silliness, as ``TagManager`` needs access
+  to ``TaggedItem``.
 
 Version 0.2, 12th Jan 2008:
 ---------------------------
