@@ -123,6 +123,129 @@ application and in any ``newforms`` forms automatically generated using
 ``ModelForm``.
 
 
+Registering your models
+=======================
+
+Your Django models can be registered with the tagging module to access
+some additional tagging-related features.
+
+.. note::
+
+   You don't *have* to register your models in order to use them with
+   the tagging application - many of the features added by registration
+   are convenience wrappers around the tagging API provided by the
+   ``Tag`` and ``TaggedItem`` models, as documented further below.
+
+The ``register`` function
+-------------------------
+
+To register a model, import the ``tagging`` module and call its
+``register`` function, like so::
+
+   from django.db import models
+
+   import tagging
+
+   class Widget(models.Model):
+       name = models.CharField(max_length=50)
+
+   tagging.register(Widget)
+
+The following argument is required:
+
+``model``
+   The model class to be registered.
+
+   An exception will be raised if you attempt to register the same class
+   more than once.
+
+The following arguments are optional, with some recommended defaults -
+take care to specify different attribute names if the defaults clash
+with your model class' definition:
+
+``tag_descriptor_attr``
+   The name of an attribute in the model class which will hold a tag
+   descriptor for the model. Default: ``'tags'``
+
+   See `TagDescriptor`_ below for details about the use of this
+   descriptor.
+
+``tagged_item_manger_attr``
+   The name of an attribute in the model class which will hold a custom
+   manager for accessing tagged items for the model. Default:
+   ``'tagged'``.
+
+   See `ModelTaggedItemManager`_ below for details about the use of this
+   manager.
+
+``TagDescriptor``
+-----------------
+
+When accessed through the model class itself, this descriptor will return
+a ``ModelTagManager`` for the model. See `ModelTagManager`_ below for
+more details about its use.
+
+When accessed through a model instance, this descriptor provides a handy
+means of retrieving, updating and deleting the instance's tags. For
+example::
+
+   >>> widget = Widget.objects.create(name='Testing descriptor')
+   >>> widget.tags
+   []
+   >>> widget.tags = 'toast, melted cheese, butter'
+   >>> widget.tags
+   [<Tag: butter>, <Tag: melted cheese>, <Tag: toast>]
+   >>> del widget.tags
+   >>> widget.tags
+   []
+
+``ModelTagManager``
+-------------------
+
+A manager for retrieving tags used by a particular model.
+
+Defines the following methods:
+
+* ``get_query_set()`` -- as this method is redefined, any ``QuerySets``
+  created by this model will be initially restricted to contain the
+  distinct tags used by all the model's instances.
+
+* ``cloud(*args, **kwargs)`` -- creates a list of tags used by the
+  model's instances, with ``count`` and ``font_size`` attributes set for
+  use in displaying a tag cloud.
+
+  See the documentation on ``Tag``'s manager's `cloud_for_model method`_
+  for information on additional arguments which can be given.
+
+* ``related(self, tags, *args, **kwargs)`` -- creates a list of tags
+  used by the model's instances, which are also used by all instance
+  which have the given ``tags``.
+
+  See the documentation on ``Tag``'s manager's
+  `related_for_model method`_ for information on additional arguments
+  which can be given.
+
+``ModelTaggedItemManager``
+--------------------------
+
+A manager for retrieving model instance for a particular model, based on
+their tags.
+
+* ``related_to(obj, *args, **kwargs)`` -- creates a ``QuerySet``
+  containing model instances which are related to ``obj``, basd on its
+  tags.
+
+  See the documentation on ``TaggedItem``'s manager's
+  `get_related method`_ for information on additional arguments which
+  can be given.
+
+* ``with_all(tags)`` -- creates a ``QuerySet`` containing model
+  instances which are tagged with *all* the given tags.
+
+* ``with_any(tags)`` -- creates a ``QuerySet`` containing model
+  instances which are tagged with *any* the given tags.
+
+
 Tags
 ====
 
@@ -137,117 +260,87 @@ Fields
 
 ``Tag`` objects have the following fields:
 
-   * ``name`` -- The name of the tag. This is a unique value.
+* ``name`` -- The name of the tag. This is a unique value.
 
 Manager functions
 ~~~~~~~~~~~~~~~~~
 
 The ``Tag`` model has a custom manager which has the following helper
-functions:
+methods:
 
-   * ``update_tags(obj, tag_names)`` -- updates tags associated with an
-     object.
+* ``update_tags(obj, tag_names)`` -- updates tags associated with an
+  object.
 
-     ``tag_names`` is a string containing tag names with which ``obj``
-     should be tagged.
+  ``tag_names`` is a string containing tag names with which ``obj``
+  should be tagged.
 
-     If ``tag_names`` is ``None`` or ``''``, the object's tags will be
-     cleared.
+  If ``tag_names`` is ``None`` or ``''``, the object's tags will be
+  cleared.
 
-   * ``add_tag(obj, tag_name)`` -- associates a tag with an an object.
+* ``add_tag(obj, tag_name)`` -- associates a tag with an an object.
 
-     ``tag_name`` is a string containing a tag name with which ``obj``
-     should be tagged.
+  ``tag_name`` is a string containing a tag name with which ``obj``
+  should be tagged.
 
-   * ``get_for_object(obj)`` -- returns a ``QuerySet`` containing all
-     ``Tag`` objects associated with ``obj``.
+* ``get_for_object(obj)`` -- returns a ``QuerySet`` containing all
+  ``Tag`` objects associated with ``obj``.
 
-   * ``usage_for_model(Model, counts=False, min_count=None, filters=None)``
-     -- returns a list of ``Tag`` objects associated with instances of
-     ``Model``.
+* ``usage_for_model(model, counts=False, min_count=None, filters=None)``
+  -- returns a list of ``Tag`` objects associated with instances of
+  ``model``.
 
-     If ``counts`` is ``True``, a ``count`` attribute will be added to
-     each tag, indicating how many times it has been associated with
-     instances of ``Model``.
+  If ``counts`` is ``True``, a ``count`` attribute will be added to each
+  tag, indicating how many times it has been associated with instances
+  of ``model``.
 
-     If ``min_count`` is given, only tags which have a ``count`` greater
-     than or equal to ``min_count`` will be returned. Passing a value
-     for ``min_count`` implies ``counts=True``.
+  If ``min_count`` is given, only tags which have a ``count`` greater
+  than or equal to ``min_count`` will be returned. Passing a value for
+  ``min_count`` implies ``counts=True``.
 
-     To limit the tags (and counts, if specified) returned to those used
-     by a subset of the model's instances, pass a dictionary of field
-     lookups to be applied to ``Model`` as the ``filters`` argument.
+  To limit the tags (and counts, if specified) returned to those used by
+  a subset of the model's instances, pass a dictionary of field lookups
+  to be applied to ``model`` as the ``filters`` argument.
 
-   * ``related_for_model(tags, Model, counts=False, min_count=None)``
-     -- returns a list of tags related to a given list of tags - that
-     is, other tags used by items which have all the given tags.
+.. _`related_for_model method`:
 
-     If ``counts`` is ``True``, a ``count`` attribute will be added to
-     each tag, indicating the number of items which have it in addition
-     to the given list of tags.
+* ``related_for_model(tags, Model, counts=False, min_count=None)``
+  -- returns a list of tags related to a given list of tags - that is,
+  other tags used by items which have all the given tags.
 
-     If ``min_count`` is given, only tags which have a ``count`` greater
-     than or equal to ``min_count`` will be returned. Passing a value
-     for ``min_count`` implies ``counts=True``.
+  If ``counts`` is ``True``, a ``count`` attribute will be added to each
+  tag, indicating the number of items which have it in addition to the
+  given list of tags.
 
-   * ``cloud_for_model(Model, steps=4, distribution=LOGARITHMIC,
-     filters=None, min_count=None)`` -- returns a list of the
-     distinct ``Tag`` objects associated with instances of ``Model``,
-     each having a ``count`` attribute as above and an additional
-     ``font_size`` attribute, for use in creation of a tag cloud (a
-     type of weighted list).
+  If ``min_count`` is given, only tags which have a ``count`` greater
+  than or equal to ``min_count`` will be returned. Passing a value for
+  ``min_count`` implies ``counts=True``.
 
-     ``steps`` defines the number of font sizes available -
-     ``font_size`` may be an integer between ``1`` and ``steps``,
-     inclusive.
+.. _`cloud_for_model method`:
 
-     ``distribution`` defines the type of font size distribution
-     algorithm which will be used - logarithmic or linear. It must be
-     either ``tagging.utils.LOGARITHMIC`` or ``tagging.utils.LINEAR``.
+* ``cloud_for_model(Model, steps=4, distribution=LOGARITHMIC,
+  filters=None, min_count=None)`` -- returns a list of the distinct
+  ``Tag`` objects associated with instances of ``Model``, each having a
+  ``count`` attribute as above and an additional ``font_size``
+  attribute, for use in creation of a tag cloud (a type of weighted
+  list).
 
-     To limit the tags displayed in the cloud to those associated
-     with a subset of the Model's instances, pass a dictionary of
-     field lookups to be applied to the given Model as the ``filters``
-     argument.
+  ``steps`` defines the number of font sizes available - ``font_size``
+  may be an integer between ``1`` and ``steps``, inclusive.
 
-     To limit the tags displayed in the cloud to those with a ``count``
-     greater than or equal to ``min_count``, pass a value for the
-     ``min_count`` argument.
+  ``distribution`` defines the type of font size distribution algorithm
+  which will be used - logarithmic or linear. It must be either
+  ``tagging.utils.LOGARITHMIC`` or ``tagging.utils.LINEAR``.
+
+  To limit the tags displayed in the cloud to those associated with a
+  subset of the Model's instances, pass a dictionary of field lookups to
+  be applied to the given Model as the ``filters`` argument.
+
+  To limit the tags displayed in the cloud to those with a ``count``
+  greater than or equal to ``min_count``, pass a value for the
+  ``min_count`` argument.
 
 Basic usage
 -----------
-
-Tag input
-~~~~~~~~~
-
-Tag input from users is treated as follows:
-
-* If the tag input doesn't contain any commas or double quotes, it is
-  simply treated as a space-delimited list of tag names.
-
-* If the tag input does contain either of these characters, we parse the
-  input like so:
-
-   * Groups of characters which appear between double quotes take
-     precedence as multi-word tags (so double quoted tag names may
-     contain commas). An unclosed double quote will be ignored.
-
-   * For the remaining input, if there are any unquoted commas in the
-     input, the remainder will be treated as comma-delimited.
-     Otherwise, it will be treated as space-delimited.
-
-Examples:
-
-====================== ======================================= ================================================
-Tag input              Resulting tag names                     Notes
-====================== ======================================= ================================================
-apple ball cat         [``apple``], [``ball``], [``cat``]      No commas or quotes, so space delimited
-apple, ball cat        [``apple``], [``ball cat``]             Comma present, so comma delimited
-"apple, ball" cat dog  [``apple, ball``], [``cat``], [``dog``] All commas are quoted, so space delimited
-"apple, ball", cat dog [``apple, ball``], [``cat dog``]        Contains an unquoted comma, so comma delimited
-apple "ball cat" dog   [``apple``], [``ball cat``], [``dog``]  No commas, so space delimited
-"apple" "ball dog      [``apple``], [``ball``], [``dog``]      Unclosed double quote is ignored
-====================== ======================================= ================================================
 
 Tagging objects and retrieving an object's tags
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -319,6 +412,39 @@ greater than 99::
 
 .. _`field lookups`: http://www.djangoproject.com/documentation/db-api/#field-lookups
 
+Tag input
+---------
+
+Tag input from users is treated as follows:
+
+* If the input doesn't contain any commas or double quotes, it is simply
+  treated as a space-delimited list of tag names.
+
+* If the input does contain either of these characters, we parse the
+  input like so:
+
+  * Groups of characters which appear between double quotes take
+    precedence as multi-word tags (so double quoted tag names may
+    contain commas). An unclosed double quote will be ignored.
+
+  * For the remaining input, if there are any unquoted commas in the
+    input, the remainder will be treated as comma-delimited. Otherwise,
+    it will be treated as space-delimited.
+
+Examples:
+
+====================== ======================================= ================================================
+Tag input string       Resulting tags                          Notes
+====================== ======================================= ================================================
+apple ball cat         [``apple``], [``ball``], [``cat``]      No commas, so space delimited
+apple, ball cat        [``apple``], [``ball cat``]             Comma present, so comma delimited
+"apple, ball" cat dog  [``apple, ball``], [``cat``], [``dog``] All commas are quoted, so space delimited
+"apple, ball", cat dog [``apple, ball``], [``cat dog``]        Contains an unquoted comma, so comma delimited
+apple "ball cat" dog   [``apple``], [``ball cat``], [``dog``]  No commas, so space delimited
+"apple" "ball dog      [``apple``], [``ball``], [``dog``]      Unclosed double quote is ignored
+====================== ======================================= ================================================
+
+
 
 Tagged items
 ============
@@ -335,12 +461,12 @@ Fields
 
 ``TaggedItem`` objects have the following fields:
 
-   * ``tag`` -- The ``Tag`` an object is associated with.
-   * ``content_type`` -- The ``ContentType`` of the associated model
-     instance.
-   * ``object_id`` -- The id of the associated object.
-   * ``object`` -- The associated object itself, accessible via the
-     Generic Relations API.
+* ``tag`` -- The ``Tag`` an object is associated with.
+* ``content_type`` -- The ``ContentType`` of the associated model
+  instance.
+* ``object_id`` -- The id of the associated object.
+* ``object`` -- The associated object itself, accessible via the
+  Generic Relations API.
 
 Manager functions
 ~~~~~~~~~~~~~~~~~
@@ -348,32 +474,32 @@ Manager functions
 The ``TaggedItem`` model has a custom manager which has the following
 helper functions:
 
-   * ``get_by_model(Model, tag)`` -- If ``tag`` is an instance of a
-     ``Tag``, returns a ``QuerySet`` containing all instances of
-     ``Model`` which are tagged with it.
+* ``get_by_model(model, tag)`` -- If ``tag`` is an instance of a
+  ``Tag``, returns a ``QuerySet`` containing all instances of ``model``
+  which are tagged with it.
 
-     If ``tag`` is a list of tags, returns a ``QuerySet`` containing
-     all instances of ``Model`` which are tagged with every tag in
-     the list.
+  If ``tag`` is a list of tags, returns a ``QuerySet`` containing all
+  instances of ``model`` which are tagged with every tag in the list.
 
-   * ``get_intersection_by_model(Model, tags)`` -- Returns a
-     ``QuerySet`` containing all instances of ``Model`` which are
-     tagged with every tag in the list.
+* ``get_intersection_by_model(model, tags)`` -- Returns a ``QuerySet``
+  containing all instances of ``model`` which are tagged with every tag
+  in the list.
 
-     ``get_by_model`` will call this function behind the scenes when
-     you pass it a list, so it's recommended that you use
-     ``get_by_model`` instead of calling this function directly.
+  ``get_by_model`` will call this function behind the scenes when you
+  pass it a list, so it's recommended that you use ``get_by_model``
+  instead of calling this function directly.
 
-   * ``get_union_by_model(Model, tags)`` -- Returns a ``QuerySet``
-     containing all instances of ``Model`` which are tagged with any tag
-     in the list.
+* ``get_union_by_model(model, tags)`` -- Returns a ``QuerySet``
+  containing all instances of ``model`` which are tagged with any tag in
+  the list.
 
-   * ``get_related(obj, Model, num=None)`` - Returns instances of
-     ``Model`` which share tags with the model instance ``obj``,
-     ordered by the number of shared tags in descending order.
+.. _`get_related method`:
 
-     If ``num`` is given, a maximum of ``num`` instances will be
-     returned.
+* ``get_related(obj, model, num=None)`` - Returns instances of ``model``
+  which share tags with the model instance ``obj``, ordered by the
+  number of shared tags in descending order.
+
+  If ``num`` is given, a maximum of ``num`` instances will be returned.
 
 Basic usage
 -----------

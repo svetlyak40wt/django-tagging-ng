@@ -6,6 +6,11 @@ Django Tagging Changelog
 SVN Trunk Changes:
 ------------------
 
+* A ``tagging.TagDescriptor`` is now added to models when registered.
+  This returns a ``tagging.managers.ModelTagManager`` when accessed on a
+  model class, and provide access to and control over tags when used on
+  an instance.
+
 * Added ``tagging.register`` to register models with the tagging app.
   Initially, a ``tagging.managers.ModelTaggedItemManager`` is added for
   convenient access to tagged items.
