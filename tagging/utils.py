@@ -30,7 +30,9 @@ def parse_tag_input(input):
     # input, we don't *do* a recall... I mean, we know we only need to
     # split on spaces.
     if u',' not in input and u'"' not in input:
-        return split_strip(input, u' ')
+        words = list(set(split_strip(input, u' ')))
+        words.sort()
+        return words
 
     words = []
     buffer = []

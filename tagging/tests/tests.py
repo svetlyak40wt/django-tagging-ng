@@ -22,7 +22,9 @@ r"""
 >>> parse_tag_input('one two')
 [u'one', u'two']
 >>> parse_tag_input('one two three')
-[u'one', u'two', u'three']
+[u'one', u'three', u'two']
+>>> parse_tag_input('one one two two')
+[u'one', u'two']
 
 # Comma-delimited multiple words - an unquoted comma in the input will trigger
 # this.
