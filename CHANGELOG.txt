@@ -6,9 +6,6 @@ Django Tagging Changelog
 SVN Trunk Changes:
 ------------------
 
-* Fixed a bug with space-delimited tag input handling - duplicates
-  weren't being removed and the list of tag names wasn't sorted.
-
 * Removed ``tagging\tests\runtests.py``, as tests can be run with
   ``django-admin.py test --settings=tagging.tests.settings``.
 
@@ -24,6 +21,12 @@ SVN Trunk Changes:
 * Moved ``TagManager`` and ``TaggedItemManager`` to ``models.py`` - gets
   rid of some import related silliness, as ``TagManager`` needs access
   to ``TaggedItem``.
+
+Version 0.2.1, 16th Jan 2008:
+-----------------------------
+
+* Fixed a bug with space-delimited tag input handling - duplicates
+  weren't being removed and the list of tag names wasn't sorted.
 
 Version 0.2, 12th Jan 2008:
 ---------------------------
