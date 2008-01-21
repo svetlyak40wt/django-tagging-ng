@@ -6,6 +6,15 @@ Django Tagging Changelog
 SVN Trunk Changes:
 ------------------
 
+* Added a ``usage`` method to ``ModelTagManager``.
+
+* ``TaggedItemManager``'s methods now accept a ``QuerySet`` or a
+  ``Model`` class. If a ``QuerySet`` is given, it will be used as the
+  basis for the ``QuerySet``s the methods return, so can be used to
+  restrict results to a subset of a model's instances. The 
+  `tagged_object_list`` generic view and ModelTaggedItemManager``
+  manager have been updated accordingly.
+
 * Removed ``tagging\tests\runtests.py``, as tests can be run with
   ``django-admin.py test --settings=tagging.tests.settings``.
 

@@ -45,7 +45,7 @@ Installing the development version
 
 Alternatively, if you'd like to update Django Tagging occasionally to pick
 up the latest bug fixes and enhancements before they make it into an
-offical release, perform a `Subversion`_ checkout instead. The following
+official release, perform a `Subversion`_ checkout instead. The following
 command will check the application's development branch out to an
 ``tagging-trunk`` directory::
 
@@ -61,7 +61,7 @@ opening a Python interpreter and entering the following commands::
 
    >>> import tagging
    >>> tagging.VERSION
-   (0, 2, 'pre')
+   (0, 3, 'pre')
 
 When you want to update your copy of the Django Tagging source code, run
 the command ``svn update`` from within the ``tagging-trunk`` directory.
@@ -99,7 +99,7 @@ That's it!
 Settings
 ========
 
-Some of Django Tagging's behaviour may be configured by adding the
+Some of the application's behaviour can be configured by adding the
 appropriate settings to your project's settings file.
 
 The following settings are available:
@@ -117,7 +117,7 @@ MAX_TAG_LENGTH
 
 Default: ``50``
 
-An integer which specifies the maxiumum length which any tag is allowed
+An integer which specifies the maximum length which any tag is allowed
 to have. This is used for validation in the ``django.contrib.admin``
 application and in any ``newforms`` forms automatically generated using
 ``ModelForm``.
@@ -126,15 +126,16 @@ application and in any ``newforms`` forms automatically generated using
 Registering your models
 =======================
 
-Your Django models can be registered with the tagging module to access
-some additional tagging-related features.
+Your Django models can be registered with the tagging application to
+access some additional tagging-related features.
 
 .. note::
 
    You don't *have* to register your models in order to use them with
    the tagging application - many of the features added by registration
-   are convenience wrappers around the tagging API provided by the
-   ``Tag`` and ``TaggedItem`` models, as documented further below.
+   are just convenience wrappers around the tagging API provided by the
+   ``Tag`` and ``TaggedItem`` models and their managers, as documented
+   further below.
 
 The ``register`` function
 -------------------------
@@ -225,25 +226,48 @@ Defines the following methods:
   `related_for_model method`_ for information on additional arguments
   which can be given.
 
+* ``usage(self, *args, **kwargs))`` -- creates a list of tags used by
+  the model's instances, with optional usages counts, restriction based
+  on usage counts and restriction of the model instances from which
+  usage and counts are determined.
+
+  See the documentation on ``Tag``'s manager's `usage_for_model method`_
+  for information on additional arguments which can be given.
+
+Example usage::
+
+   # Create a ``QuerySet`` of tags used by Widget instances
+   Widget.tags.all()
+
+   # Retrieve a list of tags used by Widget instances with usage counts
+   Widget.tags.usage(counts=True)
+
+   # Retrieve tags used by instances of WIdget which are also tagged with
+   # 'cheese' and 'toast'
+   Widget.tags.related(['cheese', 'toast'], counts=True, min_count=3)
+
 ``ModelTaggedItemManager``
 --------------------------
 
 A manager for retrieving model instance for a particular model, based on
 their tags.
 
-* ``related_to(obj, *args, **kwargs)`` -- creates a ``QuerySet``
-  containing model instances which are related to ``obj``, basd on its
-  tags.
+* ``related_to(obj, queryset=None, num=None)`` -- creates a list
+  of model instances which are related to ``obj``, based on its tags. If
+  a ``queryset`` argument is provided, it will be used to restrict the
+  resulting list of model instances.
 
-  See the documentation on ``TaggedItem``'s manager's
-  `get_related method`_ for information on additional arguments which
-  can be given.
+  If ``num`` is given, a maximum of ``num`` instances will be returned.
 
-* ``with_all(tags)`` -- creates a ``QuerySet`` containing model
-  instances which are tagged with *all* the given tags.
+* ``with_all(tags, queryset=None)`` -- creates a ``QuerySet`` containing
+  model instances which are tagged with *all* the given tags. If a
+  ``queryset`` argument is provided, it will be used as the basis for
+  the resulting ``QuerySet``.
 
-* ``with_any(tags)`` -- creates a ``QuerySet`` containing model
-  instances which are tagged with *any* the given tags.
+* ``with_any(tags, queryset=None)`` -- creates a ``QuerySet`` containing model
+  instances which are tagged with *any* the given tags. If a ``queryset``
+  argument is provided, it will be used as the basis for the resulting
+  ``QuerySet``.
 
 
 Tags
@@ -284,6 +308,8 @@ methods:
 
 * ``get_for_object(obj)`` -- returns a ``QuerySet`` containing all
   ``Tag`` objects associated with ``obj``.
+
+.. _`usage_for_model method`:
 
 * ``usage_for_model(model, counts=False, min_count=None, filters=None)``
   -- returns a list of ``Tag`` objects associated with instances of
@@ -445,7 +471,6 @@ apple "ball cat" dog   [``apple``], [``ball cat``], [``dog``]  No commas, so spa
 ====================== ======================================= ================================================
 
 
-
 Tagged items
 ============
 
@@ -472,32 +497,32 @@ Manager functions
 ~~~~~~~~~~~~~~~~~
 
 The ``TaggedItem`` model has a custom manager which has the following
-helper functions:
+helper methods, which accept either a ``QuerySet`` or a ``Model``
+class as one of their arguments. To restrict the objects which are
+returned, pass in a filtered ``QuerySet`` for this argument:
 
-* ``get_by_model(model, tag)`` -- If ``tag`` is an instance of a
-  ``Tag``, returns a ``QuerySet`` containing all instances of ``model``
-  which are tagged with it.
+* ``get_by_model(queryset_or_model, tag)`` -- creates a ``QuerySet``
+  containing instances of the specififed model which are tagged with
+  the given tag or tags.
 
-  If ``tag`` is a list of tags, returns a ``QuerySet`` containing all
-  instances of ``model`` which are tagged with every tag in the list.
-
-* ``get_intersection_by_model(model, tags)`` -- Returns a ``QuerySet``
-  containing all instances of ``model`` which are tagged with every tag
-  in the list.
+* ``get_intersection_by_model(queryset_or_model, tags)`` -- creates a
+  ``QuerySet`` containing instances of the specified model which are
+  tagged with every tag in a list of tags.
 
   ``get_by_model`` will call this function behind the scenes when you
-  pass it a list, so it's recommended that you use ``get_by_model``
-  instead of calling this function directly.
+  pass it a list, so you can use ``get_by_model`` instead of calling
+  this method directly.
 
-* ``get_union_by_model(model, tags)`` -- Returns a ``QuerySet``
-  containing all instances of ``model`` which are tagged with any tag in
-  the list.
+* ``get_union_by_model(queryset_or_model, tags)`` -- creates a
+  ``QuerySet`` containing instances of the specified model which are
+  tagged with any tag in a list of tags.
 
 .. _`get_related method`:
 
-* ``get_related(obj, model, num=None)`` - Returns instances of ``model``
-  which share tags with the model instance ``obj``, ordered by the
-  number of shared tags in descending order.
+* ``get_related(obj, queryset_or_model, num=None)`` - returns a list of
+  instances of the specified model which share tags with the model
+  instance ``obj``, ordered by the number of shared tags in descending
+  order.
 
   If ``num`` is given, a maximum of ``num`` instances will be returned.
 
@@ -531,6 +556,19 @@ Functions which take tags are flexible when it comes to tag input::
    [<Widget: pk=1>]
    >>> TaggedItem.objects.get_by_model(Widget, ['house', 'thing'])
    [<Widget: pk=1>]
+
+Restricting objects returned
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Pass in a ``QuerySet`` to restrict the objects returned::
+
+   # Retrieve all Widgets which have a price less than 50, tagged with 'house'
+   TaggedItem.objects.get_by_model(Widget.objects.filter(price__lt=50), 'house')
+
+   # Retrieve all Widgets which have a name starting with 'a', tagged with any
+   # of 'house', 'garden' or 'water'.
+   TaggedItem.objects.get_union_by_model(Widget.objects.filter(name__startswith='a'),
+                                         ['house', 'garden', 'water'])
 
 
 Utilities
@@ -665,47 +703,6 @@ the ``ModelForm`` class provided by newforms, any
 represented by a ``tagging.forms.TagField`` in the generated form.
 
 
-Simplified tagging and retrieval of tags with properties
-========================================================
-
-If you're not using ``TagField``, a useful method for simplifying
-tagging and retrieval of tags for your models is to set up a
-property::
-
-   from django.db import models
-   from tagging.models import Tag
-
-   class MyModel(models.Model):
-       name = models.CharField(maxlength=100)
-       tag_list = models.CharField(maxlength=255)
-
-       def save(self):
-           super(MyModel, self).save()
-           self.tags = self.tag_list
-
-       def _get_tags(self):
-           return Tag.objects.get_for_object(self)
-
-       def _set_tags(self, tag_list):
-           Tag.objects.update_tags(self, tag_list)
-
-       tags = property(_get_tags, _set_tags)
-
-       def __unicode__(self):
-           return self.name
-
-Once you've set this up, you can access and set tags in a fairly
-natural way::
-
-   >>> obj = MyModel.objects.get(pk=1)
-   >>> obj.tags = 'foo bar'
-   >>> obj.tags
-   [<Tag: bar>, <Tag: foo>]
-
-Remember that ``obj.tags`` will return a ``QuerySet``, so you can
-perform further filtering on it, should you need to.
-
-
 Generic views
 =============
 
@@ -726,8 +723,8 @@ arguments supported by ``object_list``), building the appropriate
 
 **Required arguments:**
 
-   * ``model``: The Django model class of the object that will be
-     listed.
+   * ``queryset_or_model``: A ``QuerySet`` or Django model class for the
+     object which will be listed.
 
    * ``tag``: The tag which objects of the given model must have in
      order to be listed.
@@ -762,7 +759,9 @@ The following sample URLconf demonstrates using this generic view to
 list items of a particular model class which have a given tag::
 
    from django.conf.urls.defaults import *
+
    from tagging.views import tagged_object_list
+
    from shop.apps.products.models import Widget
 
    urlpatterns = patterns('',
@@ -772,6 +771,18 @@ list items of a particular model class which have a given tag::
                 template_object_name='widget'),
            name='widget_tag_detail'),
    )
+
+The following sample view demonstrates wrapping this generic view to
+perform filtering of the objects which are listed::
+
+   from myapp.models import People
+
+   from tagging.views import tagged_object_list
+
+   def tagged_people(request, country_code, tag):
+       queryset = People.objects.filter(country__code=country_code)
+       return tagged_object_list(request, queryset, tag, paginate_by=25,
+           allow_empty=True, template_object_name='people')
 
 
 Template tags

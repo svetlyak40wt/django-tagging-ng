@@ -12,7 +12,7 @@ from django.db.models.query import QuerySet, parse_lookup
 from django.utils.translation import ugettext_lazy as _
 
 from tagging import settings
-from tagging.utils import calculate_cloud, get_tag_list, parse_tag_input
+from tagging.utils import calculate_cloud, get_tag_list, get_queryset_and_model, parse_tag_input
 from tagging.utils import LOGARITHMIC
 from tagging.validators import isTag
 
@@ -230,27 +230,41 @@ class TagManager(models.Manager):
         return calculate_cloud(tags, steps, distribution)
 
 class TaggedItemManager(models.Manager):
-    def get_by_model(self, model, tags):
+    """
+    FIXME There's currently no way to get the ``GROUP BY`` and ``HAVING``
+          SQL clauses required by many of this manager's methods into
+          Django's ORM.
+
+          For now, we manually execute a query to retrieve the PKs of
+          objects we're interested in, then use the ORM's ``__in``
+          lookup to return a ``QuerySet``.
+
+          Once the queryset-refactor branch lands in trunk, this can be
+          tidied up significantly.
+    """
+    def get_by_model(self, queryset_or_model, tags):
         """
-        Create a queryset matching instances of the given Model
-        associated with a given Tag or list of Tags.
+        Create a ``QuerySet`` containing instances of the specified
+        model associated with a given tag or list of tags.
         """
         tags = get_tag_list(tags)
         tag_count = len(tags)
         if tag_count == 0:
             # No existing tags were given
+            queryset, model = get_queryset_and_model(queryset_or_model)
             return model._default_manager.none()
         elif tag_count == 1:
             # Optimisation for single tag - fall through to the simpler
             # query below.
             tag = tags[0]
         else:
-            return self.get_intersection_by_model(model, tags)
+            return self.get_intersection_by_model(queryset_or_model, tags)
 
-        ctype = ContentType.objects.get_for_model(model)
+        queryset, model = get_queryset_and_model(queryset_or_model)
+        content_type = ContentType.objects.get_for_model(model)
         opts = self.model._meta
         tagged_item_table = qn(opts.db_table)
-        return model._default_manager.extra(
+        return queryset.extra(
             tables=[opts.db_table],
             where=[
                 '%s.content_type_id = %%s' % tagged_item_table,
@@ -259,28 +273,17 @@ class TaggedItemManager(models.Manager):
                                           qn(model._meta.pk.column),
                                           tagged_item_table)
             ],
-            params=[ctype.pk, tag.pk],
+            params=[content_type.pk, tag.pk],
         )
 
-    def get_intersection_by_model(self, model, tags):
+    def get_intersection_by_model(self, queryset_or_model, tags):
         """
-        Create a queryset matching instances of the given Model
-        associated with all the given list of Tags.
-
-        FIXME The query currently used to grab the ids of objects
-              which have all the tags should be all that we need run,
-              using a non-explicit join for the QuerySet returned, as
-              in get_by_model, but there's currently no way to get the
-              required GROUP BY and HAVING clauses into Django's ORM.
-
-              Once the ORM is capable of this, we should have a
-              solution which requires only a single query and won't
-              have the problem where the number of ids in the IN
-              clause in the QuerySet could exceed the length allowed,
-              as could currently happen.
+        Create a ``QuerySet`` containing instances of the specified
+        model associated with *all* of the given list of tags.
         """
         tags = get_tag_list(tags)
         tag_count = len(tags)
+        queryset, model = get_queryset_and_model(queryset_or_model)
         model_table = qn(model._meta.db_table)
         # This query selects the ids of all objects which have all the
         # given tags.
@@ -304,17 +307,18 @@ class TaggedItemManager(models.Manager):
         cursor.execute(query, [tag.pk for tag in tags])
         object_ids = [row[0] for row in cursor.fetchall()]
         if len(object_ids) > 0:
-            return model._default_manager.filter(pk__in=object_ids)
+            return queryset.filter(pk__in=object_ids)
         else:
             return model._default_manager.none()
 
-    def get_union_by_model(self, model, tags):
+    def get_union_by_model(self, queryset_or_model, tags):
         """
-        Create a queryset matching instances of the given Model
-        associated with any of the given list of Tags.
+        Create a ``QuerySet`` containing instances of the specified
+        model associated with *any* of the given list of tags.
         """
         tags = get_tag_list(tags)
         tag_count = len(tags)
+        queryset, model = get_queryset_and_model(queryset_or_model)
         model_table = qn(model._meta.db_table)
         # This query selects the ids of all objects which have any of
         # the given tags.
@@ -336,19 +340,20 @@ class TaggedItemManager(models.Manager):
         cursor.execute(query, [tag.pk for tag in tags])
         object_ids = [row[0] for row in cursor.fetchall()]
         if len(object_ids) > 0:
-            return model._default_manager.filter(pk__in=object_ids)
+            return queryset.filter(pk__in=object_ids)
         else:
             return model._default_manager.none()
 
-    def get_related(self, obj, model, num=None):
+    def get_related(self, obj, queryset_or_model, num=None):
         """
-        Retrieve instances of ``model`` which share tags with the
-        model instance ``obj``, ordered by the number of shared tags
-        in descending order.
+        Retrieve a list of instances of the specified model which share
+        tags with the model instance ``obj``, ordered by the number of
+        shared tags in descending order.
 
         If ``num`` is given, a maximum of ``num`` instances will be
         returned.
         """
+        queryset, model = get_queryset_and_model(queryset_or_model)
         model_table = qn(model._meta.db_table)
         content_type = ContentType.objects.get_for_model(obj)
         related_content_type = ContentType.objects.get_for_model(model)
@@ -387,10 +392,10 @@ class TaggedItemManager(models.Manager):
         if len(object_ids) > 0:
             # Use in_bulk here instead of an id__in lookup, because id__in would
             # clobber the ordering.
-            object_dict = model._default_manager.in_bulk(object_ids)
+            object_dict = queryset.in_bulk(object_ids)
             return [object_dict[object_id] for object_id in object_ids]
         else:
-            return model._default_manager.none()
+            return []
 
 ##########
 # Models #
