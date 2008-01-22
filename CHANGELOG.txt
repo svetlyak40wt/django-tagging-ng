@@ -6,6 +6,13 @@ Django Tagging Changelog
 SVN Trunk Changes:
 ------------------
 
+* Added a ``tagging.generic`` module for working with list of objects
+  which have generic relations, containing a ``fetch_content_objects``
+  function for retrieving content objects for a list of ``TaggedItem``s
+  using ``number_of_content_types + 1`` queries rather than the
+  ``number_of_tagged_items * 2`` queries you'd get by iterating over the
+  list and accessing each item's ``object`` attribute.
+
 * Added a ``usage`` method to ``ModelTagManager``.
 
 * ``TaggedItemManager``'s methods now accept a ``QuerySet`` or a
