@@ -126,6 +126,8 @@ application and in any ``newforms`` forms automatically generated using
 Registering your models
 =======================
 
+**New in developement version**
+
 Your Django models can be registered with the tagging application to
 access some additional tagging-related features.
 
@@ -365,6 +367,21 @@ methods:
   greater than or equal to ``min_count``, pass a value for the
   ``min_count`` argument.
 
+**New in development version**
+
+* ``usage_for_queryset(queryset, counts=False, min_count=None)`` --
+  Obtains a list of tags associated with instances of a model contained
+  in the given queryset.
+
+  If ``counts`` is True, a ``count`` attribute will be added to each tag,
+  indicating how many times it has been used against the Model class in
+  question.
+
+  If ``min_count`` is given, only tags which have a ``count`` greater
+  than or equal to ``min_count`` will be returned.
+
+  Passing a value for ``min_count`` implies ``counts=True``.
+
 Basic usage
 -----------
 
@@ -437,6 +454,13 @@ greater than 99::
    >>> Tag.objects.usage_for_model(Widget, filters=dict(size__gt=99, user__username='Alan'))
 
 .. _`field lookups`: http://www.djangoproject.com/documentation/db-api/#field-lookups
+
+**New in development version**
+
+The ``usage_for_queryset`` method allows you to pass a pre-filtered
+queryset to be used when determining tag usage::
+
+   >>> Tag.objects.usage_for_queryset(Widget.objects.filter(size__gt=99, user__username='Alan'))
 
 Tag input
 ---------
