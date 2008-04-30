@@ -35,4 +35,4 @@ class Article(models.Model):
         ordering = ['name']
 
 class FormTest(models.Model):
-    tags = TagField()
+    tags = TagField('Test', help_text='Test')
