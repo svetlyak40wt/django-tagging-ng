@@ -17,11 +17,11 @@ class TagField(CharField):
     "under the hood". This exposes a space-separated string of tags, but does
     the splitting/reordering/etc. under the hood.
     """
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
         kwargs['max_length'] = kwargs.get('max_length', 255)
         kwargs['blank'] = kwargs.get('blank', True)
         kwargs['validator_list'] = [isTagList] + kwargs.get('validator_list', [])
-        super(TagField, self).__init__(**kwargs)
+        super(TagField, self).__init__(*args, **kwargs)
 
     def contribute_to_class(self, cls, name):
         super(TagField, self).contribute_to_class(cls, name)
