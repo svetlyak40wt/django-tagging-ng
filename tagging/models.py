@@ -8,7 +8,7 @@ if not hasattr(__builtins__, 'set'):
 from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
 from django.db import connection, models
-from django.db.models.query import QuerySet, parse_lookup
+from django.db.models.query import QuerySet
 from django.utils.translation import ugettext_lazy as _
 
 from tagging import settings
@@ -17,6 +17,11 @@ from tagging.utils import LOGARITHMIC
 from tagging.validators import isTag
 
 qn = connection.ops.quote_name
+
+try:
+    from django.db.models.query import parse_lookup
+except ImportError:
+    parse_lookup = None
 
 ############
 # Managers #
@@ -74,25 +79,11 @@ class TagManager(models.Manager):
         return self.filter(items__content_type__pk=ctype.pk,
                            items__object_id=obj.pk)
 
-    def usage_for_model(self, model, counts=False, min_count=None, filters=None):
+    def _get_usage(self, model, counts=False, min_count=None, extra_joins=None, extra_criteria=None, params=None):
         """
-        Obtain a list of tags associated with instances of the given
-        Model class.
-
-        If ``counts`` is True, a ``count`` attribute will be added to
-        each tag, indicating how many times it has been used against
-        the Model class in question.
-
-        If ``min_count`` is given, only tags which have a ``count``
-        greater than or equal to ``min_count`` will be returned.
-        Passing a value for ``min_count`` implies ``counts=True``.
-
-        To limit the tags (and counts, if specified) returned to those
-        used by a subset of the Model's instances, pass a dictionary
-        of field lookups to be applied to the given Model as the
-        ``filters`` argument.
+        Perform the custom SQL query for ``usage_for_model`` and
+        ``usage_for_queryset``.
         """
-        if filters is None: filters = {}
         if min_count is not None: counts = True
 
         model_table = qn(model._meta.db_table)
@@ -119,15 +110,7 @@ class TagManager(models.Manager):
             'content_type_id': ContentType.objects.get_for_model(model).pk,
         }
 
-        extra_joins = ''
-        extra_criteria = ''
         min_count_sql = ''
-        params = []
-        if len(filters) > 0:
-            joins, where, params = parse_lookup(filters.items(), model._meta)
-            extra_joins = ' '.join(['%s %s AS %s ON %s' % (join_type, table, alias, condition)
-                                    for (alias, (table, join_type, condition)) in joins.items()])
-            extra_criteria = 'AND %s' % (' AND '.join(where))
         if min_count is not None:
             min_count_sql = 'HAVING COUNT(%s) >= %%s' % model_pk
             params.append(min_count)
@@ -141,6 +124,70 @@ class TagManager(models.Manager):
                 t.count = row[2]
             tags.append(t)
         return tags
+
+    def usage_for_model(self, model, counts=False, min_count=None, filters=None):
+        """
+        Obtain a list of tags associated with instances of the given
+        Model class.
+
+        If ``counts`` is True, a ``count`` attribute will be added to
+        each tag, indicating how many times it has been used against
+        the Model class in question.
+
+        If ``min_count`` is given, only tags which have a ``count``
+        greater than or equal to ``min_count`` will be returned.
+        Passing a value for ``min_count`` implies ``counts=True``.
+
+        To limit the tags (and counts, if specified) returned to those
+        used by a subset of the Model's instances, pass a dictionary
+        of field lookups to be applied to the given Model as the
+        ``filters`` argument.
+        """
+        if filters is None: filters = {}
+
+        if not parse_lookup:
+            # post-queryset-refactor (hand off to usage_for_queryset)
+            queryset = model._default_manager.filter()
+            for f in filters.items():
+                queryset.query.add_filter(f)
+            usage = self.usage_for_queryset(queryset, counts, min_count)
+        else:
+            # pre-queryset-refactor
+            extra_joins = ''
+            extra_criteria = ''
+            params = []
+            if len(filters) > 0:
+                joins, where, params = parse_lookup(filters.items(), model._meta)
+                extra_joins = ' '.join(['%s %s AS %s ON %s' % (join_type, table, alias, condition)
+                                        for (alias, (table, join_type, condition)) in joins.items()])
+                extra_criteria = 'AND %s' % (' AND '.join(where))
+            usage = self._get_usage(model, counts, min_count, extra_joins, extra_criteria, params)
+
+        return usage
+
+    def usage_for_queryset(self, queryset, counts=False, min_count=None):
+        """
+        Obtain a list of tags associated with instances of a model
+        contained in the given queryset.
+
+        If ``counts`` is True, a ``count`` attribute will be added to
+        each tag, indicating how many times it has been used against
+        the Model class in question.
+
+        If ``min_count`` is given, only tags which have a ``count``
+        greater than or equal to ``min_count`` will be returned.
+        Passing a value for ``min_count`` implies ``counts=True``.
+        """
+        if parse_lookup:
+            raise AttributeError("'TagManager.usage_for_queryset' is not compatible with pre-queryset-refactor versions of Django.")
+
+        extra_joins = ' '.join(queryset.query.get_from_clause()[0][1:])
+        where, params = queryset.query.where.as_sql()
+        if where:
+            extra_criteria = 'AND %s' % where
+        else:
+            extra_criteria = ''
+        return self._get_usage(queryset.model, counts, min_count, extra_joins, extra_criteria, params)
 
     def related_for_model(self, tags, model, counts=False, min_count=None):
         """
