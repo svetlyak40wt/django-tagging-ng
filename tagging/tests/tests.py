@@ -323,6 +323,10 @@ u'test5'
 >>> TaggedItem.objects.get_by_model(Parrot, [bar, ter])
 [<Parrot: late>, <Parrot: passed on>]
 
+# Issue 114 - Intersection with non-existant tags
+>>> TaggedItem.objects.get_intersection_by_model(Parrot, [])
+[]
+
 # You can also pass Tag QuerySets
 >>> TaggedItem.objects.get_by_model(Parrot, Tag.objects.filter(name__in=['foo', 'baz']))
 []
@@ -354,6 +358,10 @@ u'test5'
 [<Parrot: late>, <Parrot: no more>, <Parrot: passed on>, <Parrot: pining for the fjords>]
 >>> TaggedItem.objects.get_union_by_model(Parrot, ['bar', 'baz'])
 [<Parrot: late>, <Parrot: passed on>, <Parrot: pining for the fjords>]
+
+# Issue 114 - Union with non-existant tags
+>>> TaggedItem.objects.get_union_by_model(Parrot, [])
+[]
 
 # Retrieving related objects by Model #########################################
 

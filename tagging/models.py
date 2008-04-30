@@ -331,6 +331,10 @@ class TaggedItemManager(models.Manager):
         tags = get_tag_list(tags)
         tag_count = len(tags)
         queryset, model = get_queryset_and_model(queryset_or_model)
+
+        if not tag_count:
+            return model._default_manager.none()
+
         model_table = qn(model._meta.db_table)
         # This query selects the ids of all objects which have all the
         # given tags.
@@ -366,6 +370,10 @@ class TaggedItemManager(models.Manager):
         tags = get_tag_list(tags)
         tag_count = len(tags)
         queryset, model = get_queryset_and_model(queryset_or_model)
+
+        if not tag_count:
+            return model._default_manager.none()
+
         model_table = qn(model._meta.db_table)
         # This query selects the ids of all objects which have any of
         # the given tags.
