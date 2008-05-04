@@ -448,7 +448,8 @@ class TaggedItemManager(models.Manager):
             # Use in_bulk here instead of an id__in lookup, because id__in would
             # clobber the ordering.
             object_dict = queryset.in_bulk(object_ids)
-            return [object_dict[object_id] for object_id in object_ids]
+            return [object_dict[object_id] for object_id in object_ids \
+                    if object_id in object_dict]
         else:
             return []
 
