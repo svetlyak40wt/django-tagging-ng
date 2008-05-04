@@ -6,12 +6,12 @@ DEFAULT_CHARSET = 'utf-8'
 DATABASE_ENGINE = 'sqlite3'
 DATABASE_NAME = os.path.join(DIRNAME, 'tagging_test.db')
 
-DATABASE_ENGINE = 'mysql'
-DATABASE_NAME = 'tagging_test'
-DATABASE_USER = 'root'
-DATABASE_PASSWORD = ''
-DATABASE_HOST = 'localhost'
-DATABASE_PORT = '3306'
+#DATABASE_ENGINE = 'mysql'
+#DATABASE_NAME = 'tagging_test'
+#DATABASE_USER = 'root'
+#DATABASE_PASSWORD = ''
+#DATABASE_HOST = 'localhost'
+#DATABASE_PORT = '3306'
 
 #DATABASE_ENGINE = 'postgresql_psycopg2'
 #DATABASE_NAME = 'tagging_test'
