@@ -380,6 +380,10 @@ u'test5'
 >>> TaggedItem.objects.get_related(l4, Link)
 []
 
+# Limit related items
+>>> TaggedItem.objects.get_related(l1, Link.objects.exclude(name='link 3'))
+[<Link: link 2>]
+
 # Related instance of a different Model
 >>> a1 = Article.objects.create(name='article 1')
 >>> Tag.objects.update_tags(a1, 'tag1 tag2 tag3 tag4')
