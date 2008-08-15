@@ -64,5 +64,5 @@ class TagDescriptor(object):
     def __set__(self, instance, value):
         Tag.objects.update_tags(instance, value)
 
-    def __del__(self, instance):
+    def __delete__(self, instance):
         Tag.objects.update_tags(instance, None)
