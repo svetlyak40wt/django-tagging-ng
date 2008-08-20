@@ -10,7 +10,9 @@ from django.utils.encoding import force_unicode
 from django.utils.translation import ugettext as _
 
 # Python 2.3 compatibility
-if not hasattr(__builtins__, 'set'):
+try:
+    set
+except NameError:
     from sets import Set as set
 
 def parse_tag_input(input):
