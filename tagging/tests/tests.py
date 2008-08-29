@@ -8,7 +8,7 @@ tests = r"""
 >>> from tagging.tests.models import Article, Link, Perch, Parrot, FormTest
 >>> from tagging.utils import calculate_cloud, get_tag_list, get_tag, parse_tag_input
 >>> from tagging.utils import LINEAR
->>> from tagging.validators import isTagList, isTag
+>>> from tagging.validators import is_tag_list, is_tag
 
 #############
 # Utilities #
@@ -154,18 +154,18 @@ ValueError: Invalid distribution algorithm specified: cheese.
 
 # Validators ##################################################################
 
->>> isTagList('foo qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbn bar', {})
+>>> is_tag_list('foo qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbn bar', {})
 Traceback (most recent call last):
     ...
 ValidationError: [u'Each tag may be no more than 50 characters long.']
 
->>> isTag('"test"', {})
->>> isTag(',test', {})
->>> isTag('f o o', {})
+>>> is_tag('"test"', {})
+>>> is_tag(',test', {})
+>>> is_tag('f o o', {})
 Traceback (most recent call last):
     ...
 ValidationError: [u'Multiple tags were given.']
->>> isTagList('foo qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbn bar', {})
+>>> is_tag_list('foo qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbn bar', {})
 Traceback (most recent call last):
     ...
 ValidationError: [u'Each tag may be no more than 50 characters long.']
