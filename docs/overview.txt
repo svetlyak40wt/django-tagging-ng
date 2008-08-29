@@ -699,7 +699,7 @@ model::
 
 This field will also validate that it has been given a valid list of
 tag names, separated by a single comma, a single space or a comma
-followed by a space, using the ``isTagList`` validator from
+followed by a space, using the ``is_tag_list`` validator from
 ``tagging.validators``.
 
 

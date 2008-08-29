@@ -8,7 +8,6 @@ from django.utils.translation import ugettext_lazy as _
 from tagging import settings
 from tagging.models import Tag
 from tagging.utils import edit_string_for_tags
-from tagging.validators import isTagList
 
 class TagField(CharField):
     """
@@ -19,7 +18,6 @@ class TagField(CharField):
     def __init__(self, *args, **kwargs):
         kwargs['max_length'] = kwargs.get('max_length', 255)
         kwargs['blank'] = kwargs.get('blank', True)
-        kwargs['validator_list'] = [isTagList] + kwargs.get('validator_list', [])
         super(TagField, self).__init__(*args, **kwargs)
 
     def contribute_to_class(self, cls, name):
