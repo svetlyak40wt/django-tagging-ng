@@ -46,7 +46,7 @@ for dirpath, dirnames, filenames in os.walk(tagging_dir):
         data_files.append([dirpath, [os.path.join(dirpath, f) for f in filenames]])
 
 # Dynamically calculate the version based on tagging.VERSION
-version_tuple = __import__('tagging').VERSION
+version_tuple = (0, 3, 'pre')
 if version_tuple[2] is not None:
     version = "%d.%d_%s" % version_tuple
 else:
