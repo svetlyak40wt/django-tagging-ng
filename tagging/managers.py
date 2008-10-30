@@ -23,7 +23,7 @@ class ModelTagManager(models.Manager):
         return Tag.objects.related_for_model(tags, self.model, *args, **kwargs)
 
     def usage(self, *args, **kwargs):
-        return Tag.objects.usage_for_model(self.model, *arg, **kwargs)
+        return Tag.objects.usage_for_model(self.model, *args, **kwargs)
 
 class ModelTaggedItemManager(models.Manager):
     """
