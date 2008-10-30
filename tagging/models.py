@@ -267,7 +267,7 @@ class TaggedItemManager(models.Manager):
           objects we're interested in, then use the ORM's ``__in``
           lookup to return a ``QuerySet``.
 
-          now that the queryset-refactor branch is in the trunk, this can be
+          Now that the queryset-refactor branch is in the trunk, this can be
           tidied up significantly.
     """
     def get_by_model(self, queryset_or_model, tags):
@@ -419,11 +419,16 @@ class TaggedItemManager(models.Manager):
             'tag': qn(self.model._meta.get_field('tag').rel.to._meta.db_table),
             'content_type_id': content_type.pk,
             'related_content_type_id': related_content_type.pk,
-            'limit_offset': num is not None and connection.ops.limit_offset_sql(num) or '',
+            # Hardcoding this for now just to get tests working again - this
+            # should now be handled by the query object.
+            'limit_offset': num is not None and 'LIMIT %s' or '',
         }
 
         cursor = connection.cursor()
-        cursor.execute(query, [obj.pk])
+        params = [obj.pk]
+        if num is not None:
+            params.append(num)
+        cursor.execute(query, params)
         object_ids = [row[0] for row in cursor.fetchall()]
         if len(object_ids) > 0:
             # Use in_bulk here instead of an id__in lookup, because id__in would

@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
-tests = r"""
+r"""
 >>> import os
->>> from django import newforms as forms
+>>> from django import forms
+>>> from django.db.models import Q
 >>> from tagging.forms import TagField
 >>> from tagging import settings
 >>> from tagging.models import Tag, TaggedItem
 >>> from tagging.tests.models import Article, Link, Perch, Parrot, FormTest
 >>> from tagging.utils import calculate_cloud, get_tag_list, get_tag, parse_tag_input
 >>> from tagging.utils import LINEAR
->>> from tagging.validators import is_tag_list, is_tag
 
 #############
 # Utilities #
@@ -151,24 +151,6 @@ ValueError: The tag input given was invalid.
 Traceback (most recent call last):
     ...
 ValueError: Invalid distribution algorithm specified: cheese.
-
-# Validators ##################################################################
-
->>> is_tag_list('foo qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbn bar', {})
-Traceback (most recent call last):
-    ...
-ValidationError: [u'Each tag may be no more than 50 characters long.']
-
->>> is_tag('"test"', {})
->>> is_tag(',test', {})
->>> is_tag('f o o', {})
-Traceback (most recent call last):
-    ...
-ValidationError: [u'Multiple tags were given.']
->>> is_tag_list('foo qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbn bar', {})
-Traceback (most recent call last):
-    ...
-ValidationError: [u'Each tag may be no more than 50 characters long.']
 
 ###########
 # Tagging #
@@ -393,6 +375,36 @@ u'test5'
 >>> TaggedItem.objects.get_related(a1, Link)
 []
 
+# Limiting results to a queryset
+>>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_queryset(Parrot.objects.filter(state='no more'), counts=True)]
+[(u'foo', 1), (u'ter', 1)]
+>>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_queryset(Parrot.objects.filter(state__startswith='p'), counts=True)]
+[(u'bar', 2), (u'baz', 1), (u'foo', 1), (u'ter', 1)]
+>>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_queryset(Parrot.objects.filter(perch__size__gt=4), counts=True)]
+[(u'bar', 2), (u'baz', 1), (u'foo', 1), (u'ter', 1)]
+>>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_queryset(Parrot.objects.filter(perch__smelly=True), counts=True)]
+[(u'bar', 1), (u'foo', 2), (u'ter', 1)]
+>>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_queryset(Parrot.objects.filter(perch__smelly=True), min_count=2)]
+[(u'foo', 2)]
+>>> [(tag.name, hasattr(tag, 'counts')) for tag in Tag.objects.usage_for_queryset(Parrot.objects.filter(perch__size__gt=4))]
+[(u'bar', False), (u'baz', False), (u'foo', False), (u'ter', False)]
+>>> [(tag.name, hasattr(tag, 'counts')) for tag in Tag.objects.usage_for_queryset(Parrot.objects.filter(perch__size__gt=99))]
+[]
+>>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_queryset(Parrot.objects.filter(Q(perch__size__gt=6) | Q(state__startswith='l')), counts=True)]
+[(u'bar', 2), (u'foo', 1), (u'ter', 1)]
+>>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_queryset(Parrot.objects.filter(Q(perch__size__gt=6) | Q(state__startswith='l')), min_count=2)]
+[(u'bar', 2)]
+>>> [(tag.name, hasattr(tag, 'counts')) for tag in Tag.objects.usage_for_queryset(Parrot.objects.filter(Q(perch__size__gt=6) | Q(state__startswith='l')))]
+[(u'bar', False), (u'foo', False), (u'ter', False)]
+>>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_queryset(Parrot.objects.exclude(state='passed on'), counts=True)]
+[(u'bar', 2), (u'foo', 2), (u'ter', 2)]
+>>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_queryset(Parrot.objects.exclude(state__startswith='p'), min_count=2)]
+[(u'ter', 2)]
+>>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_queryset(Parrot.objects.exclude(Q(perch__size__gt=6) | Q(perch__smelly=False)), counts=True)]
+[(u'foo', 1), (u'ter', 1)]
+>>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_queryset(Parrot.objects.exclude(perch__smelly=True).filter(state__startswith='l'), counts=True)]
+[(u'bar', 1), (u'ter', 1)]
+
 ################
 # Model Fields #
 ################
@@ -444,52 +456,3 @@ Traceback (most recent call last):
     ...
 ValidationError: [u'Each tag may be no more than 50 characters long.']
 """
-
-tests_pre_qsrf = tests + r"""
-# Limiting results to a queryset
->>> Tag.objects.usage_for_queryset(Parrot.objects.filter())
-Traceback (most recent call last):
-    ...
-AttributeError: 'TagManager.usage_for_queryset' is not compatible with pre-queryset-refactor versions of Django.
-"""
-
-tests_post_qsrf = tests + r"""
->>> from django.db.models import Q
-
-# Limiting results to a queryset
->>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_queryset(Parrot.objects.filter(state='no more'), counts=True)]
-[(u'foo', 1), (u'ter', 1)]
->>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_queryset(Parrot.objects.filter(state__startswith='p'), counts=True)]
-[(u'bar', 2), (u'baz', 1), (u'foo', 1), (u'ter', 1)]
->>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_queryset(Parrot.objects.filter(perch__size__gt=4), counts=True)]
-[(u'bar', 2), (u'baz', 1), (u'foo', 1), (u'ter', 1)]
->>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_queryset(Parrot.objects.filter(perch__smelly=True), counts=True)]
-[(u'bar', 1), (u'foo', 2), (u'ter', 1)]
->>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_queryset(Parrot.objects.filter(perch__smelly=True), min_count=2)]
-[(u'foo', 2)]
->>> [(tag.name, hasattr(tag, 'counts')) for tag in Tag.objects.usage_for_queryset(Parrot.objects.filter(perch__size__gt=4))]
-[(u'bar', False), (u'baz', False), (u'foo', False), (u'ter', False)]
->>> [(tag.name, hasattr(tag, 'counts')) for tag in Tag.objects.usage_for_queryset(Parrot.objects.filter(perch__size__gt=99))]
-[]
->>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_queryset(Parrot.objects.filter(Q(perch__size__gt=6) | Q(state__startswith='l')), counts=True)]
-[(u'bar', 2), (u'foo', 1), (u'ter', 1)]
->>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_queryset(Parrot.objects.filter(Q(perch__size__gt=6) | Q(state__startswith='l')), min_count=2)]
-[(u'bar', 2)]
->>> [(tag.name, hasattr(tag, 'counts')) for tag in Tag.objects.usage_for_queryset(Parrot.objects.filter(Q(perch__size__gt=6) | Q(state__startswith='l')))]
-[(u'bar', False), (u'foo', False), (u'ter', False)]
->>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_queryset(Parrot.objects.exclude(state='passed on'), counts=True)]
-[(u'bar', 2), (u'foo', 2), (u'ter', 2)]
->>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_queryset(Parrot.objects.exclude(state__startswith='p'), min_count=2)]
-[(u'ter', 2)]
->>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_queryset(Parrot.objects.exclude(Q(perch__size__gt=6) | Q(perch__smelly=False)), counts=True)]
-[(u'foo', 1), (u'ter', 1)]
->>> [(tag.name, tag.count) for tag in Tag.objects.usage_for_queryset(Parrot.objects.exclude(perch__smelly=True).filter(state__startswith='l'), counts=True)]
-[(u'bar', 1), (u'ter', 1)]
-"""
-
-try:
-    from django.db.models.query import parse_lookup
-except ImportError:
-    __test__ = {'post-qsrf': tests_post_qsrf}
-else:
-    __test__ = {'pre-qsrf': tests_pre_qsrf}

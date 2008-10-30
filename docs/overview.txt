@@ -76,7 +76,7 @@ the command ``svn update`` from within the ``tagging-trunk`` directory.
    copy of the source code.
 
 .. _`Subversion`: http://subversion.tigris.org
-.. _`PYTHONPATH`: http://docs.python.org/tut/node8.html#SECTION008110000000000000000
+.. _`PYTHONPATH`: http://www.python.org/doc/2.5.2/tut/node8.html#SECTION008120000000000000000
 .. _`junction`: http://www.microsoft.com/technet/sysinternals/FileAndDisk/Junction.mspx
 .. _`CHANGELOG`: http://django-tagging.googlecode.com/svn/trunk/CHANGELOG.txt
 .. _`backwards-incompatible changes wiki page`: http://code.google.com/p/django-tagging/wiki/BackwardsIncompatibleChanges
@@ -119,8 +119,7 @@ Default: ``50``
 
 An integer which specifies the maximum length which any tag is allowed
 to have. This is used for validation in the ``django.contrib.admin``
-application and in any ``newforms`` forms automatically generated using
-``ModelForm``.
+application and in any forms automatically generated using ``ModelForm``.
 
 
 Registering your models
@@ -453,7 +452,7 @@ greater than 99::
 
    >>> Tag.objects.usage_for_model(Widget, filters=dict(size__gt=99, user__username='Alan'))
 
-.. _`field lookups`: http://www.djangoproject.com/documentation/db-api/#field-lookups
+.. _`field lookups`: http://docs.djangoproject.com/en/dev/topics/db/queries/#field-lookups
 
 **New in development version**
 
@@ -699,18 +698,17 @@ model::
 
 This field will also validate that it has been given a valid list of
 tag names, separated by a single comma, a single space or a comma
-followed by a space, using the ``is_tag_list`` validator from
-``tagging.validators``.
+followed by a space.
 
 
 Form fields
 ===========
 
 The ``tagging.forms`` module contains a ``Field`` for use with
-Django's `newforms library`_ which takes care of validating tag name
+Django's `forms library`_ which takes care of validating tag name
 input when used in your forms.
 
-.. _`newforms library`: http://www.djangoproject.com/documentation/newforms/
+.. _`forms library`: http://docs.djangoproject.com/en/dev/topics/forms/
 
 Field types
 -----------
@@ -722,9 +720,9 @@ A form ``Field`` which is displayed as a single-line text input, which
 validates that the input it receives is a valid list of tag names.
 
 When you generate a form for one of your models automatically, using
-the ``ModelForm`` class provided by newforms, any
-``tagging.fields.TagField`` fields in your model will automatically be
-represented by a ``tagging.forms.TagField`` in the generated form.
+the ``ModelForm`` class, any ``tagging.fields.TagField`` fields in your
+model will automatically be represented by a ``tagging.forms.TagField``
+in the generated form.
 
 
 Generic views
@@ -774,7 +772,7 @@ template context variables which may be provided.
 
    * ``tag``: The ``Tag`` instance for the given tag.
 
-.. _`object_list documentation`: http://www.djangoproject.com/documentation/generic_views/#django-views-generic-list-detail-object-list
+.. _`object_list documentation`: http://docs.djangoproject.com/en/dev/ref/generic-views/#django-views-generic-list-detail-object-list
 
 Example usage
 ~~~~~~~~~~~~~
