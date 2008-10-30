@@ -401,7 +401,7 @@ function::
    [<Tag: house>, <Tag: thing>]
 
 Tags are created, associated and unassociated accordingly when you use
-``update_tags`` and ``add_tags``::
+``update_tags`` and ``add_tag``::
 
    >>> Tag.objects.update_tags(widget, 'house monkey')
    >>> Tag.objects.get_for_object(widget)
