@@ -58,6 +58,18 @@ class TaggedObjectsNode(Node):
             TaggedItem.objects.get_by_model(model, self.tag.resolve(context))
         return ''
 
+class RelatedObjectsNode(Node):
+    def __init__(self, tags, model, context_var):
+        self.tags = tags
+        self.context_var = context_var
+        self.model = get_model(*model.split('.'))
+
+    def render(self, context):
+        self.tags = resolve_variable(self.tags, context)
+        from tagging.models import Tag
+        context[self.context_var] = TaggedItem.objects.get_by_model(self.model, self.tags)
+        return ''
+
 def do_tags_for_model(parser, token):
     """
     Retrieves a list of ``Tag`` objects associated with a given model
@@ -225,7 +237,30 @@ def do_tagged_objects(parser, token):
         raise TemplateSyntaxError(_("fourth argument to %s tag must be 'as'") % bits[0])
     return TaggedObjectsNode(bits[1], bits[3], bits[5])
 
+def do_related_objects(parser, token):
+    """
+    Retrieves a list of objects for a given Model which are tagged with
+    a any given Tag and stores them in a context variable.
+
+    The tag must be an instance of a ``Tag``, not the name of a tag.
+
+    The model is specified in ``[appname].[modelname]`` format.
+
+    Example usage::
+
+        {% related_objects foo_tag for tv.model as object_list %}
+    """
+    bits = token.contents.split()
+    if len(bits) != 6:
+        raise TemplateSyntaxError('%s tag requires exactly five arguments' % bits[0])
+    if bits[2] != 'for':
+        raise TemplateSyntaxError("second argument to %s tag must be 'for'" % bits[0])
+    if bits[4] != 'as':
+        raise TemplateSyntaxError("fourth argument to %s tag must be 'as'" % bits[0])
+    return RelatedObjectsNode(bits[1], bits[3], bits[5])
+
 register.tag('tags_for_model', do_tags_for_model)
 register.tag('tag_cloud_for_model', do_tag_cloud_for_model)
 register.tag('tags_for_object', do_tags_for_object)
 register.tag('tagged_objects', do_tagged_objects)
+register.tag('related_objects', do_related_objects)
