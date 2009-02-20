@@ -19,11 +19,17 @@ from tagging.utils import LOGARITHMIC
 
 qn = connection.ops.quote_name
 
+if settings.MULTILINGUAL_TAGS:
+    import multilingual
+    BaseManager = multilingual.Manager
+else:
+    BaseManager = models.Manager
+
 ############
 # Managers #
 ############
 
-class TagManager(models.Manager):
+class TagManager(BaseManager):
     def update_tags(self, obj, tag_names):
         """
         Update tags associated with an object.
@@ -85,7 +91,7 @@ class TagManager(models.Manager):
         model_table = qn(model._meta.db_table)
         model_pk = '%s.%s' % (model_table, qn(model._meta.pk.column))
         query = """
-        SELECT DISTINCT %(tag)s.id, %(tag)s.name%(count_sql)s
+        SELECT DISTINCT %(tag)s.id%(count_sql)s
         FROM
             %(tag)s
             INNER JOIN %(tagged_item)s
@@ -95,9 +101,8 @@ class TagManager(models.Manager):
             %%s
         WHERE %(tagged_item)s.content_type_id = %(content_type_id)s
             %%s
-        GROUP BY %(tag)s.id, %(tag)s.name
-        %%s
-        ORDER BY %(tag)s.name ASC""" % {
+        GROUP BY %(tag)s.id
+        %%s""" % {
             'tag': qn(self.model._meta.db_table),
             'count_sql': counts and (', COUNT(%s)' % model_pk) or '',
             'tagged_item': qn(TaggedItem._meta.db_table),
@@ -114,11 +119,13 @@ class TagManager(models.Manager):
         cursor = connection.cursor()
         cursor.execute(query % (extra_joins, extra_criteria, min_count_sql), params)
         tags = []
+        # TODO add ordering by name right here
         for row in cursor.fetchall():
-            t = self.model(*row[:2])
+            t = self.model.objects.get(pk = row[0])
             if counts:
-                t.count = row[2]
+                t.count = row[1]
             tags.append(t)
+        tags.sort()
         return tags
 
     def usage_for_model(self, model, counts=False, min_count=None, filters=None):
@@ -188,7 +195,7 @@ class TagManager(models.Manager):
         tag_count = len(tags)
         tagged_item_table = qn(TaggedItem._meta.db_table)
         query = """
-        SELECT %(tag)s.id, %(tag)s.name%(count_sql)s
+        SELECT %(tag)s.id%(count_sql)s
         FROM %(tagged_item)s INNER JOIN %(tag)s ON %(tagged_item)s.tag_id = %(tag)s.id
         WHERE %(tagged_item)s.content_type_id = %(content_type_id)s
           AND %(tagged_item)s.object_id IN
@@ -202,9 +209,8 @@ class TagManager(models.Manager):
               HAVING COUNT(%(tagged_item)s.object_id) = %(tag_count)s
           )
           AND %(tag)s.id NOT IN (%(tag_id_placeholders)s)
-        GROUP BY %(tag)s.id, %(tag)s.name
-        %(min_count_sql)s
-        ORDER BY %(tag)s.name ASC""" % {
+        GROUP BY %(tag)s.id
+        %(min_count_sql)s""" % {
             'tag': qn(self.model._meta.db_table),
             'count_sql': counts and ', COUNT(%s.object_id)' % tagged_item_table or '',
             'tagged_item': tagged_item_table,
@@ -222,10 +228,11 @@ class TagManager(models.Manager):
         cursor.execute(query, params)
         related = []
         for row in cursor.fetchall():
-            tag = self.model(*row[:2])
+            tag = self.model.objects.get(pk = row[0])
             if counts is True:
-                tag.count = row[2]
+                tag.count = row[1]
             related.append(tag)
+        related.sort()
         return related
 
     def cloud_for_model(self, model, steps=4, distribution=LOGARITHMIC,
@@ -257,7 +264,7 @@ class TagManager(models.Manager):
                                          min_count=min_count))
         return calculate_cloud(tags, steps, distribution)
 
-class TaggedItemManager(models.Manager):
+class TaggedItemManager(BaseManager):
     """
     FIXME There's currently no way to get the ``GROUP BY`` and ``HAVING``
           SQL clauses required by many of this manager's methods into
@@ -447,17 +454,25 @@ class Tag(models.Model):
     """
     A tag.
     """
-    name = models.CharField(_('name'), max_length=50, unique=True, db_index=True)
+    if settings.MULTILINGUAL_TAGS:
+        class Translation(multilingual.Translation):
+            name = models.CharField(_('name'), max_length=50, unique=True, db_index=True)
+    else:
+        name = models.CharField(_('name'), max_length=50, unique=True, db_index=True)
 
     objects = TagManager()
 
     class Meta:
-        ordering = ('name',)
+        if not settings.MULTILINGUAL_TAGS:
+            ordering = ('name',)
         verbose_name = _('tag')
         verbose_name_plural = _('tags')
 
     def __unicode__(self):
         return self.name
+
+    def __lt__(self, other):
+        return self.name < other.name
 
 class TaggedItem(models.Model):
     """

@@ -25,3 +25,6 @@ INSTALLED_APPS = (
     'tagging',
     'tagging.tests',
 )
+
+MULTILINGUAL_TAGS = True
+DEFAULT_LANGUAGE = 1
