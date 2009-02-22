@@ -7,7 +7,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from tagging import settings
 from tagging.models import Tag
-from tagging.utils import edit_string_for_tags
+from tagging.utils import edit_string_for_tags, parse_tag_input
 
 class TagField(CharField):
     """
@@ -27,7 +27,8 @@ class TagField(CharField):
         setattr(cls, self.name, self)
 
         # Save tags back to the database post-save
-        signals.post_save.connect(self._save, cls, True)
+        signals.post_save.connect(self._post_save, cls, True)
+        signals.pre_save.connect(self._pre_save, cls, True)
 
     def __get__(self, instance, owner=None):
         """
@@ -71,7 +72,18 @@ class TagField(CharField):
             value = value.lower()
         self._set_instance_tag_cache(instance, value)
 
-    def _save(self, **kwargs): #signal, sender, instance):
+    def _pre_save(self, **kwargs): #signal, sender, instance):
+        """
+        Save tags back to the database
+        """
+        tags = self._get_instance_tag_cache(kwargs['instance'])
+        tags = parse_tag_input(tags)
+        #print 'Tags before: %s' % tags
+        instance = kwargs['instance']
+        self._set_instance_tag_cache(
+            instance, edit_string_for_tags(tags))
+
+    def _post_save(self, **kwargs): #signal, sender, instance):
         """
         Save tags back to the database
         """

@@ -15,6 +15,18 @@ try:
 except NameError:
     from sets import Set as set
 
+def replace_synonyms(tag_list):
+    """In given tag list, search synonyms and replace them with original names."""
+    from tagging.models import Synonym
+
+    def search_synonym(name):
+        syn = Synonym.objects.filter(name=name).all()
+        return len(syn)==1 and syn[0].tag.name or name
+
+    words = list(set(search_synonym(tag) for tag in tag_list))
+    words.sort()
+    return words
+
 def parse_tag_input(input):
     """
     Parses tag input, with multiple word input being activated and
@@ -32,9 +44,7 @@ def parse_tag_input(input):
     # input, we don't *do* a recall... I mean, we know we only need to
     # split on spaces.
     if u',' not in input and u'"' not in input:
-        words = list(set(split_strip(input, u' ')))
-        words.sort()
-        return words
+        return replace_synonyms(split_strip(input, u' '))
 
     words = []
     buffer = []
@@ -81,9 +91,7 @@ def parse_tag_input(input):
             delimiter = u' '
         for chunk in to_be_split:
             words.extend(split_strip(chunk, delimiter))
-    words = list(set(words))
-    words.sort()
-    return words
+    return replace_synonyms(words)
 
 def split_strip(input, delimiter=u','):
     """
@@ -112,7 +120,7 @@ def edit_string_for_tags(tags):
     names = []
     use_commas = False
     for tag in tags:
-        name = tag.name
+        name = getattr(tag, 'name', tag)
         if u',' in name:
             names.append('"%s"' % name)
             continue

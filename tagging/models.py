@@ -7,9 +7,13 @@ try:
 except NameError:
     from sets import Set as set
 
+import logging
+
+logger = logging.getLogger('tagging.models')
+
 from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
-from django.db import connection, models
+from django.db import connection, models, IntegrityError
 from django.db.models.query import QuerySet
 from django.utils.translation import ugettext_lazy as _
 
@@ -264,6 +268,108 @@ class TagManager(BaseManager):
                                          min_count=min_count))
         return calculate_cloud(tags, steps, distribution)
 
+    def process_rules(self, rules):
+        for line in rules.split('\n'):
+            self._process_line(line)
+        return True
+
+    def _process_line(self, line):
+        logger.debug('processing line "%s"' % line)
+
+        def join(tags):
+            self.join([tag[0] for tag in tags if tag])
+
+        if '==' in line:
+            names = [name.strip() for name in line.split('==')]
+
+            try:
+                tag = self.get(name=names[0])
+            except Tag.DoesNotExist:
+                return
+
+            for syn_name in names[1:]:
+                try:
+                    syn = Synonym(name=syn_name, tag=tag)
+                    syn.save()
+                except IntegrityError:
+                    pass
+
+            join([self.filter(name=name)[:1] for name in names])
+
+        elif '=' in line:
+            join([self.filter(name=name.strip())[:1] \
+                  for name in line.split('=')])
+
+        elif ':' in line:
+            parts = line.split(';')
+            if len(parts) > 0:
+                changed = False
+                head = [p.strip() for p in parts[0].split(':')][:2]
+                tag_from = head[0]
+                tag_to = (len(head)==2) and head[1] or head[0]
+
+                try:
+                    tag = self.get(name=tag_from)
+                except Tag.DoesNotExist:
+                    return
+
+                if tag.name != tag_to:
+                    tag.name = tag_to
+                    changed = True
+
+                names = [tuple(i.strip() for i in p.split(':')) for p in parts[1:]]
+                for name in names:
+                    if len(name) == 2 and getattr(tag, 'name_%s' % name[0], None) != name[1]:
+                        setattr(tag, 'name_%s' % name[0], name[1])
+                        changed = True
+
+                if changed:
+                    tag.save()
+
+    def dumpAsText(self):
+        tags = self.all()
+        return '\n'.join(filter(lambda x: x, \
+                [self.dumpSynonymsAsText(t) for t in tags] + \
+                [self.dumpTagAsText(t) for t in tags]))
+
+    def dumpTagAsText(self, tag):
+        parts = [tag.name, ]
+        for id, code in multilingual.languages.get_language_choices():
+            name = tag.get_translation(id, 'name').name
+            if name:
+                parts.append('%s: %s' % (code, name))
+
+        return '; '.join(parts)
+
+    def dumpSynonymsAsText(self, tag):
+        synonyms = tag.synonyms.all()
+        if len(synonyms) > 0:
+            return ' == '.join([tag.name, ] + [s.name for s in synonyms])
+        return ''
+
+    def join(self, query):
+        """This method joins multiple tags together."""
+
+        logger.info('Joining %s' % ','.join([unicode(obj) for obj in query]))
+        tags = list(query)
+        if len(tags) < 2:
+            return
+
+        first = tags[0]
+        tags = tags[1:]
+
+        objects_with_first = [tag.object for tag in TaggedItem.objects.filter(tag=first)]
+        tagged_items = TaggedItem.objects.filter(tag__in=tags)
+        for item in tagged_items:
+            if item.object in objects_with_first:
+                item.delete()
+            else:
+                item.tag = first
+                item.save()
+
+        for tag in tags:
+            tag.delete()
+
 class TaggedItemManager(BaseManager):
     """
     FIXME There's currently no way to get the ``GROUP BY`` and ``HAVING``
@@ -474,6 +580,20 @@ class Tag(models.Model):
     def __lt__(self, other):
         return self.name < other.name
 
+    def delete(self):
+        self._updateLinkedObjects(remove_this = True)
+        return super(Tag, self).delete()
+
+    def save(self, *args, **kwargs):
+        result = super(Tag, self).save(*args, **kwargs)
+        self._updateLinkedObjects()
+        return result
+
+    def _updateLinkedObjects(self, remove_this = False):
+        """Updates TagField's for all objects with this tag."""
+        for item in TaggedItem.objects.filter(tag=self):
+            item._updateLinkedObjects(remove_this=remove_this)
+
 class TaggedItem(models.Model):
     """
     Holds the relationship between a tag and the item being tagged.
@@ -493,3 +613,33 @@ class TaggedItem(models.Model):
 
     def __unicode__(self):
         return u'%s [%s]' % (self.object, self.tag)
+
+    def _updateLinkedObjects(self, remove_this = False):
+        from tagging.fields import TagField
+        object_tags = [ tag.name \
+                      for tag in Tag.objects.get_for_object(self.object) \
+                              if not remove_this or tag.id != self.tag_id ]
+        tags_as_string = ', '.join(object_tags)
+
+        for field in self.object._meta.fields:
+            if isinstance(field, TagField):
+                setattr(self.object, field.attname, tags_as_string)
+                self.object.save()
+                break
+
+    def delete(self):
+        self._updateLinkedObjects(remove_this=True)
+        return super(TaggedItem, self).delete()
+
+class Synonym(models.Model):
+    name = models.CharField(max_length=50, unique=True, db_index=True)
+    tag = models.ForeignKey(Tag, related_name='synonyms')
+
+    def __unicode__(self):
+        return u'%s, synonym for %s' % (self.name, self.tag)
+
+    class Meta:
+        verbose_name = _("Tag's synonym")
+        verbose_name_plural = _("Tags' synonyms")
+        ordering = ('name',)
+
