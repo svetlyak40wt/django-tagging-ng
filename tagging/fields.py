@@ -1,12 +1,13 @@
 """
 A custom Model Field for tagging.
 """
+from django.db import IntegrityError
 from django.db.models import signals
 from django.db.models.fields import CharField
 from django.utils.translation import ugettext_lazy as _
 
 from tagging import settings
-from tagging.models import Tag
+from tagging.models import Tag, Synonym
 from tagging.utils import edit_string_for_tags, parse_tag_input
 
 class TagField(CharField):
@@ -18,6 +19,10 @@ class TagField(CharField):
     def __init__(self, *args, **kwargs):
         kwargs['max_length'] = kwargs.get('max_length', 255)
         kwargs['blank'] = kwargs.get('blank', True)
+        if kwargs.has_key('create_synonyms'):
+            self.create_synonyms = kwargs.pop('create_synonyms')
+        else:
+            self.create_synonyms = None
         super(TagField, self).__init__(*args, **kwargs)
 
     def contribute_to_class(self, cls, name):
@@ -78,6 +83,7 @@ class TagField(CharField):
         """
         tags = self._get_instance_tag_cache(kwargs['instance'])
         tags = parse_tag_input(tags)
+
         #print 'Tags before: %s' % tags
         instance = kwargs['instance']
         self._set_instance_tag_cache(
@@ -90,6 +96,20 @@ class TagField(CharField):
         tags = self._get_instance_tag_cache(kwargs['instance'])
         if tags is not None:
             Tag.objects.update_tags(kwargs['instance'], tags)
+
+        if self.create_synonyms is not None:
+            tags = parse_tag_input(tags)
+            for tag in tags:
+                synonyms = self.create_synonyms(tag)
+                try:
+                    tag = Tag.objects.get(name=tag)
+                    for synonym in synonyms:
+                        try:
+                            synonym = Synonym.objects.create(name=synonym, tag=tag)
+                        except IntegrityError:
+                            pass
+                except Tag.DoesNotExist:
+                    pass
 
     def __delete__(self, instance):
         """

@@ -187,6 +187,7 @@ def get_tag_list(tags):
                 contents.add('int')
         if len(contents) == 1:
             if 'string' in contents:
+                tags = replace_synonyms(tags)
                 return Tag.objects.filter(name__in=[force_unicode(tag) \
                                                     for tag in tags])
             elif 'tag' in contents:

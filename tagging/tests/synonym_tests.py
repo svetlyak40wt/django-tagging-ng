@@ -19,6 +19,18 @@ class TestItem( models.Model ):
     def __unicode__(self):
         return self.title
 
+
+def create_synonyms(tag_name):
+    from django.template.defaultfilters import slugify
+    return [slugify(tag_name)]
+
+class TestItemWithCallback( models.Model ):
+    title = models.CharField( _('Title'), max_length = 30)
+    tags = TagField(create_synonyms = create_synonyms)
+
+    def __unicode__(self):
+        return self.title
+
 class TaggingTestCase(unittest.TestCase):
     def setUp(self):
         TestItem.objects.all().delete()
@@ -241,4 +253,25 @@ world; en: world''', Tag.objects.dumpAsText())
         tag = Tag.objects.create(name='hello')
         Synonym.objects.create(name='aloha', tag=tag)
         self.assertEquals(['hello', 'world'], replace_synonyms(['aloha', 'world']))
+
+    def testCreateSynonymUsingFieldCallback(self):
+        tag = Tag.objects.create(name='hello')
+        Synonym.objects.create(name='aloha', tag=tag)
+        self.assertEquals(['hello', 'world'], replace_synonyms(['aloha', 'world']))
+
+        Synonym.objects.all().delete()
+        self.assertEqual(0, len(Synonym.objects.all()))
+        test_item = TestItemWithCallback(title='Test callbacks', tags='Test, Create Callbacks')
+        test_item.save()
+        second_item = TestItemWithCallback(title='Another test', tags='Test')
+        second_item.save()
+
+        synonyms = Synonym.objects.all()
+        self.assertEqual(2, len(synonyms))
+        self.assertEqual('create-callbacks', synonyms[0].name)
+        self.assertEqual('test', synonyms[1].name)
+
+        objs = TaggedItem.objects.get_by_model(TestItemWithCallback, ['create-callbacks'])
+        self.assertEqual(1, len(objs))
+        self.assertEqual('Test callbacks', objs[0].title)
 

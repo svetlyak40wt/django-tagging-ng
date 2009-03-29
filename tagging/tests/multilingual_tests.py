@@ -27,3 +27,14 @@ if settings.MULTILINGUAL_TAGS:
             self.assertEqual(ru_name, t.name)
             self.assertEqual(en_name, t.name_en)
 
+        def testGetOrCreate(self):
+            tag_name = u'test'
+
+            tag, created = Tag.objects.get_or_create(name = tag_name)
+            self.assertEqual(tag.name, tag_name)
+            self.assertEqual(True, created)
+
+            tag, created = Tag.objects.get_or_create(name = tag_name)
+            self.assertEqual(tag.name, tag_name)
+            self.assertEqual(False, created)
+
