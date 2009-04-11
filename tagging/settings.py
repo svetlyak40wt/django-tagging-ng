@@ -12,3 +12,7 @@ MAX_TAG_LENGTH = getattr(settings, 'MAX_TAG_LENGTH', 50)
 # database.
 FORCE_LOWERCASE_TAGS = getattr(settings, 'FORCE_LOWERCASE_TAGS', False)
 MULTILINGUAL_TAGS = getattr(settings, 'MULTILINGUAL_TAGS', False)
+if MULTILINGUAL_TAGS:
+    DEFAULT_LANGUAGE = getattr(settings, 'DEFAULT_LANGUAGE')
+    FALLBACK_LANGUAGE = getattr(settings, 'FALLBACK_LANGUAGE', DEFAULT_LANGUAGE)
+

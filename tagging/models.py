@@ -575,7 +575,7 @@ class Tag(models.Model):
         verbose_name_plural = _('tags')
 
     def __unicode__(self):
-        return self.name
+        return self.name or 'tag-with-id: %d' % self.id
 
     def __lt__(self, other):
         return self.name < other.name
@@ -593,6 +593,22 @@ class Tag(models.Model):
         """Updates TagField's for all objects with this tag."""
         for item in TaggedItem.objects.filter(tag=self):
             item._updateLinkedObjects(remove_this=remove_this)
+
+if settings.MULTILINGUAL_TAGS:
+    """Monkey-patching for translation getter,
+       to fallback to another translation."""
+
+    from multilingual.translation import getter_generator
+    _orig_name_getter = Tag.get_name
+    def _my_get_name(self, language_id = None):
+        value = _orig_name_getter(self, language_id)
+        if value is None and language_id is None:
+            #print 'BLAH BLAH for lang_id: %s' % language_id
+            value = _orig_name_getter(self, settings.FALLBACK_LANGUAGE)
+            #print 'New value for lang_id=%s is %s' % (settings.FALLBACK_LANGUAGE, value)
+        return value
+    _my_get_name.short_description = getattr(Tag.name, 'verbose_name', 'name')
+    setattr(Tag, 'get_name', _my_get_name)
 
 class TaggedItem(models.Model):
     """
