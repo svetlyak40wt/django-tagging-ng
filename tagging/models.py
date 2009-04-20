@@ -600,11 +600,11 @@ if settings.MULTILINGUAL_TAGS:
 
     from multilingual.translation import getter_generator
     _orig_name_getter = Tag.get_name
-    def _my_get_name(self, language_id = None):
-        value = _orig_name_getter(self, language_id)
+    def _my_get_name(self, language_id = None, fallback = False):
+        value = _orig_name_getter(self, language_id, fallback)
         if value is None and language_id is None:
             #print 'BLAH BLAH for lang_id: %s' % language_id
-            value = _orig_name_getter(self, settings.FALLBACK_LANGUAGE)
+            value = _orig_name_getter(self, settings.FALLBACK_LANGUAGE, fallback)
             #print 'New value for lang_id=%s is %s' % (settings.FALLBACK_LANGUAGE, value)
         return value
     _my_get_name.short_description = getattr(Tag.name, 'verbose_name', 'name')
