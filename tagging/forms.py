@@ -16,7 +16,7 @@ class AdminTagForm(forms.ModelForm):
         value = self.cleaned_data['name']
         tag_names = parse_tag_input(value)
         if len(tag_names) > 1:
-            raise ValidationError(_('Multiple tags were given.'))
+            raise forms.ValidationError(_('Multiple tags were given.'))
         elif len(tag_names[0]) > settings.MAX_TAG_LENGTH:
             raise forms.ValidationError(
                 _('A tag may be no more than %s characters long.') %
