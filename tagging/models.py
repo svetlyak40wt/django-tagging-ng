@@ -370,7 +370,7 @@ class TagManager(BaseManager):
         for tag in tags:
             tag.delete()
 
-class TaggedItemManager(BaseManager):
+class TaggedItemManager(models.Manager):
     """
     FIXME There's currently no way to get the ``GROUP BY`` and ``HAVING``
           SQL clauses required by many of this manager's methods into
