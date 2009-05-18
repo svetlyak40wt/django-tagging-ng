@@ -580,8 +580,9 @@ class Tag(models.Model):
     def __lt__(self, other):
         return self.name < other.name
 
-    def delete(self):
-        self._updateLinkedObjects(remove_this = True)
+    def delete(self, update = True):
+        if update:
+            self._updateLinkedObjects(remove_this = True)
         return super(Tag, self).delete()
 
     def save(self, *args, **kwargs):
@@ -643,8 +644,9 @@ class TaggedItem(models.Model):
                 self.object.save()
                 break
 
-    def delete(self):
-        self._updateLinkedObjects(remove_this=True)
+    def delete(self, update = True):
+        if update:
+            self._updateLinkedObjects(remove_this=True)
         return super(TaggedItem, self).delete()
 
 class Synonym(models.Model):
