@@ -7,6 +7,8 @@ from tagging import settings
 admin.site.register(TaggedItem)
 
 if settings.MULTILINGUAL_TAGS:
+    import multilingual
+
     def _name(tag):
         return tag.name_any
     _name.short_description = _('name')
@@ -15,17 +17,18 @@ if settings.MULTILINGUAL_TAGS:
         return ', '.join(s.name for s in tag.synonyms.all())
     _synonyms.short_description = _('synonyms')
 
-    _fields = (_name, _synonyms)
+    class TagAdmin(multilingual.ModelAdmin):
+        list_display = (_name, _synonyms)
 
     _synonym_tag_name = 'name_any'
 else:
-    _fields = ('name',)
+    class TagAdmin(admin.ModelAdmin):
+        list_display = ('name',)
 
     _synonym_tag_name = 'name'
 
-admin.site.register(Tag,
-    list_display = _fields,
-)
+
+admin.site.register(Tag, TagAdmin)
 
 def _tag_name(synonym):
     return '<a href="%s">%s</a>' % (
