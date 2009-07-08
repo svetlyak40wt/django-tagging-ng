@@ -8,7 +8,7 @@ from tagging import settings
 from tagging.models import Tag
 from tagging.utils import parse_tag_input
 
-class AdminTagForm(forms.ModelForm):
+class TagAdminForm(forms.ModelForm):
     class Meta:
         model = Tag
 
