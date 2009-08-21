@@ -3,6 +3,7 @@ from tagging.models import Tag, TaggedItem, Synonym
 from django.utils.translation import ugettext as _
 from django.core.urlresolvers import reverse
 from tagging import settings
+from tagging.forms import TagAdminForm
 
 admin.site.register(TaggedItem)
 
