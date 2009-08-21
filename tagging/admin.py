@@ -18,11 +18,13 @@ if settings.MULTILINGUAL_TAGS:
     _synonyms.short_description = _('synonyms')
 
     class TagAdmin(multilingual.ModelAdmin):
+        form = TagAdminForm
         list_display = (_name, _synonyms)
 
     _synonym_tag_name = 'name_any'
 else:
     class TagAdmin(admin.ModelAdmin):
+        form = TagAdminForm
         list_display = ('name',)
 
     _synonym_tag_name = 'name'
@@ -41,4 +43,3 @@ _tag_name.allow_tags = True
 admin.site.register(Synonym,
     list_display = ('name', _tag_name),
 )
-
