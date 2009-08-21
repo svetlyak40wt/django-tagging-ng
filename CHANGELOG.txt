@@ -1,10 +1,17 @@
-========================
-Django Tagging Changelog
-========================
+===========================
+Django Tagging NG Changelog
+===========================
 
 
-SVN Trunk Changes:
-------------------
+Version 0.3.1, 22th Aug 2009:
+-----------------------------
+
+* Tag 'related_objects' was changed. Now it accepts an object, variable's
+  name and limit (see docs/overview.txt for more details.
+
+* Added synonyms support.
+
+* Added multilingual support.
 
 * Added a ``tagging.generic`` module for working with list of objects
   which have generic relations, containing a ``fetch_content_objects``
