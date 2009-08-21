@@ -908,3 +908,16 @@ The tag must be an instance of a ``Tag``, not the name of a tag.
 Example::
 
     {% tagged_objects comedy_tag in tv.Show as comedies %}
+
+related_objects
+~~~~~~~~~~~~~~~
+
+Retrieves a list of related objects for a given object
+and stores them in a context variable.
+
+Example usage::
+
+    {% related_objects for entry as object_list limit 10 %}
+
+Here 'entry' is an object, 'object_list' is context variable's
+name and '10' is maximum number of objects.

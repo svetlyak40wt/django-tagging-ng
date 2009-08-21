@@ -59,15 +59,19 @@ class TaggedObjectsNode(Node):
         return ''
 
 class RelatedObjectsNode(Node):
-    def __init__(self, tags, model, context_var):
-        self.tags = tags
+    def __init__(self, obj, context_var, limit):
+        self.obj = obj
         self.context_var = context_var
-        self.model = get_model(*model.split('.'))
+        self.limit = int(limit)
 
     def render(self, context):
-        self.tags = resolve_variable(self.tags, context)
+        self.obj = resolve_variable(self.obj, context)
         from tagging.models import Tag
-        context[self.context_var] = TaggedItem.objects.get_by_model(self.model, self.tags)
+        context[self.context_var] = TaggedItem.objects.get_related(
+            self.obj,
+            self.obj.__class__,
+            num = self.limit
+        )
         return ''
 
 def do_tags_for_model(parser, token):
@@ -239,25 +243,23 @@ def do_tagged_objects(parser, token):
 
 def do_related_objects(parser, token):
     """
-    Retrieves a list of objects for a given Model which are tagged with
-    a any given Tag and stores them in a context variable.
-
-    The tag must be an instance of a ``Tag``, not the name of a tag.
-
-    The model is specified in ``[appname].[modelname]`` format.
+    Retrieves a list of related objects for a given object
+    and stores them in a context variable.
 
     Example usage::
 
-        {% related_objects foo_tag for tv.model as object_list %}
+        {% related_objects for entry as object_list limit 10 %}
     """
     bits = token.contents.split()
-    if len(bits) != 6:
+    if len(bits) != 7:
         raise TemplateSyntaxError('%s tag requires exactly five arguments' % bits[0])
-    if bits[2] != 'for':
-        raise TemplateSyntaxError("second argument to %s tag must be 'for'" % bits[0])
-    if bits[4] != 'as':
-        raise TemplateSyntaxError("fourth argument to %s tag must be 'as'" % bits[0])
-    return RelatedObjectsNode(bits[1], bits[3], bits[5])
+    if bits[1] != 'for':
+        raise TemplateSyntaxError("first argument to %s tag must be 'for'" % bits[0])
+    if bits[3] != 'as':
+        raise TemplateSyntaxError("third argument to %s tag must be 'as'" % bits[0])
+    if bits[5] != 'limit':
+        raise TemplateSyntaxError("third argument to %s tag must be 'limit'" % bits[0])
+    return RelatedObjectsNode(bits[2], bits[4], bits[6])
 
 register.tag('tags_for_model', do_tags_for_model)
 register.tag('tag_cloud_for_model', do_tag_cloud_for_model)
