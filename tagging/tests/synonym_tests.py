@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import unittest
+import tagging
+
 from pdb import set_trace
 from StringIO import StringIO
 
@@ -18,7 +20,6 @@ class TestItem( models.Model ):
 
     def __unicode__(self):
         return self.title
-
 
 def create_synonyms(tag_name):
     from django.template.defaultfilters import slugify

@@ -1,3 +1,3 @@
 #!/bin/sh
 
-django-admin.py test --settings=tagging.tests.settings
+django test --settings=tagging.tests.settings

@@ -2,9 +2,11 @@
 Tagging utilities - from user tag input parsing to tag cloud
 calculation.
 """
+import logging
 import math
 import types
 
+from django.db import IntegrityError
 from django.db.models.query import QuerySet
 from django.utils.encoding import force_unicode
 from django.utils.translation import ugettext as _
@@ -270,3 +272,65 @@ def calculate_cloud(tags, steps=4, distribution=LOGARITHMIC):
                     tag.font_size = i + 1
                     font_set = True
     return tags
+
+
+
+def merge(to_tag, from_tag, ctype = None):
+    """ Merge items with given tags together.
+        If there are no any items with tag 'from_tag' and
+        other content types, then 'from_tag' becomes a synonym for 'to_tag'.
+    """
+    logger = logging.getLogger('tagging.utils')
+
+    to_tag = get_tag(to_tag)
+    from_tag = get_tag(from_tag)
+    logger.debug('merging tag "%s" to tag "%s"' % (from_tag.name, to_tag.name))
+
+    from_items = from_tag.items.all()
+    if ctype is not None:
+        from_items = from_items.filter(content_type = ctype)
+
+    to_items = to_tag.items.all()
+
+    if ctype is not None:
+        to_items = to_items.filter(content_type = ctype)
+
+    to_obj_ids = [item.object_id for item in to_items]
+
+    for item in from_items:
+        if item.object_id in to_obj_ids:
+            logger.debug('item "%s" already binded to tag "%s"' % (item, to_tag))
+            item.delete(update = False)
+        else:
+            item.tag = to_tag
+            item.save()
+            logger.debug('item "%s" merged' % item)
+
+        _update_objects_tags(item.object)
+
+    if from_tag.items.count() == 0:
+        from_tag.delete()
+        try:
+            to_tag.synonyms.create(name = from_tag.name)
+        except IntegrityError:
+            pass
+
+
+def _update_objects_tags(object):
+    """ Updates TagField's value in given object.
+    """
+    from tagging.models import Tag
+    from tagging.fields import TagField
+
+    if object is None:
+        return
+
+    object_tags = (tag.name or tag.name_any for tag in Tag.objects.get_for_object(object))
+    tags_as_string = edit_string_for_tags(object_tags)
+
+    for field in object._meta.fields:
+        if isinstance(field, TagField):
+            setattr(object, field.attname, tags_as_string)
+            object.save()
+            break
+

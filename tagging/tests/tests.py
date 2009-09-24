@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
-from core_tests import *
-from multilingual_tests import *
-from synonym_tests import *
+from tagging.tests.core_tests import *
+from tagging.tests.multilingual_tests import *
+from tagging.tests.synonym_tests import *
+from tagging.tests.merge import *

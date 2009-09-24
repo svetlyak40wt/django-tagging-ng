@@ -1,6 +1,8 @@
 *.pyc
 .*.swp
 *.db
+*.egg-info
+logs
 build
 MANIFEST
 dist

@@ -349,6 +349,7 @@ class TagManager(BaseManager):
 
     def join(self, query):
         """This method joins multiple tags together."""
+        from tagging.utils import merge
 
         logger.info('Joining %s' % ','.join([unicode(obj) for obj in query]))
         tags = list(query)
@@ -357,18 +358,9 @@ class TagManager(BaseManager):
 
         first = tags[0]
         tags = tags[1:]
+        for t in tags:
+            merge(first, t)
 
-        objects_with_first = [tag.object for tag in TaggedItem.objects.filter(tag=first)]
-        tagged_items = TaggedItem.objects.filter(tag__in=tags)
-        for item in tagged_items:
-            if item.object in objects_with_first:
-                item.delete()
-            else:
-                item.tag = first
-                item.save()
-
-        for tag in tags:
-            tag.delete()
 
 class TaggedItemManager(models.Manager):
     """
