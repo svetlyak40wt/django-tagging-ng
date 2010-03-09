@@ -35,7 +35,7 @@ admin.site.register(Tag, TagAdmin)
 
 def _tag_name(synonym):
     return '<a href="%s">%s</a>' % (
-        reverse('admin_tagging_tag_change', args=(synonym.tag.id,)),
+        reverse('admin:tagging_tag_change', args=(synonym.tag.id,)),
         getattr(synonym.tag, _synonym_tag_name)
     )
 _tag_name.short_description = _('tag')
