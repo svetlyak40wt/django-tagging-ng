@@ -66,7 +66,6 @@ class RelatedObjectsNode(Node):
 
     def render(self, context):
         self.obj = resolve_variable(self.obj, context)
-        from tagging.models import Tag
         context[self.context_var] = TaggedItem.objects.get_related(
             self.obj,
             self.obj.__class__,
