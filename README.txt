@@ -18,6 +18,7 @@ This application is based on the original code, written by:
 Enhanced by:
     Alexander Artemenko <svetlyak.40wt@gmail.com>
     Antti Kaihola <akaihol+django@ambitone.com>
+    GW [http://gw.tnode.com/] <gw.2012@tnode.com>
 
 Sources
 -------
