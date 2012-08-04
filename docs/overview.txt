@@ -112,6 +112,14 @@ Default: ``False``
 A boolean that turns on/off forcing of all tag names to lowercase before
 they are saved to the database.
 
+FORCE_TAG_DELIMITER
+-------------------
+
+Default: ``None``
+
+Force a string to be used as a delimiter for separating tags or None for default
+behavour.
+
 MAX_TAG_LENGTH
 --------------
 
@@ -120,6 +128,13 @@ Default: ``50``
 An integer which specifies the maximum length which any tag is allowed
 to have. This is used for validation in the ``django.contrib.admin``
 application and in any forms automatically generated using ``ModelForm``.
+
+MULTILINGUAL_TAGS
+-----------------
+
+Default: ``False``
+
+Whether to use multilingual tags.
 
 
 Registering your models
