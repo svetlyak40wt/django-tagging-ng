@@ -11,6 +11,8 @@ from django.db.models.query import QuerySet
 from django.utils.encoding import force_unicode
 from django.utils.translation import ugettext as _
 
+from tagging import settings
+
 # Python 2.3 compatibility
 try:
     set
@@ -134,6 +136,8 @@ def edit_string_for_tags(tags):
         glue = u', '
     else:
         glue = u' '
+    if settings.FORCE_TAG_DELIMITER is not None:
+        glue = settings.FORCE_TAG_DELIMITER
     return glue.join(names)
 
 def get_queryset_and_model(queryset_or_model):

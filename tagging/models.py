@@ -53,7 +53,7 @@ class TagManager(BaseManager):
                                                object_id=obj.pk,
                                                tag__in=tags_for_removal).delete()
         # Add new tags
-        current_tag_names = [tag.name_any for tag in current_tags]
+        current_tag_names = [tag.name or tag.name_any for tag in current_tags]
         for tag_name in updated_tag_names:
             if tag_name not in current_tag_names:
                 tag, created = self.get_or_create(name=tag_name)
@@ -625,7 +625,7 @@ class TaggedItem(models.Model):
 
     def _updateLinkedObjects(self, remove_this = False):
         from tagging.fields import TagField
-        object_tags = [ tag.name_any \
+        object_tags = [ tag.name or tag.name_any \
                       for tag in Tag.objects.get_for_object(self.object) \
                               if not remove_this or tag.id != self.tag_id ]
         tags_as_string = ', '.join(object_tags)
