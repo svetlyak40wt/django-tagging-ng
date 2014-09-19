@@ -8,6 +8,13 @@ This is a enhanced tagging application for Django projects
 
 - For detailed instructions on how to configure and know all possibilities of this application, see the file "OVERVIEW.txt"
 
+
+Rquirements
+-----------
+Note that this application requires Python 2.3 or later, and Django 0.96 or later. You can obtain Python from
+http://www.python.org/ and Django from http://www.djangoproject.com/.
+
+
 Quickstart
 ----------
 
