@@ -1,14 +1,67 @@
-Thanks for downloading django-tagging.
+Installation
+============
 
-To install it, run the following command inside this directory:
+Installing an official release
+------------------------------
 
-    python setup.py install
+Official releases are made available from
+http://code.google.com/p/django-tagging/
 
-Or if you'd prefer you can simply place the included ``tagging``
-directory somewhere on your Python path, or symlink to it from
-somewhere on your Python path; this is useful if you're working from a
-Subversion checkout.
+Remember run the command ``manage.py syncdb`` after installation
 
-Note that this application requires Python 2.3 or later, and Django
-0.96 or later. You can obtain Python from http://www.python.org/ and
-Django from http://www.djangoproject.com/.
+Source distribution
+~~~~~~~~~~~~~~~~~~~
+
+Download the .zip distribution file and unpack it. Inside is a script
+named ``setup.py``. Enter this command::
+
+   python setup.py install
+
+...and the package will install automatically.
+
+
+
+Windows installer
+~~~~~~~~~~~~~~~~~
+
+A Windows installer is also made available - download the .exe
+distribution file and launch it to install the application.
+
+An uninstaller will also be created, accessible through Add/Remove
+Programs in your Control Panel.
+
+Installing the development version
+----------------------------------
+
+Alternatively, if you'd like to update Django Tagging occasionally to pick
+up the latest bug fixes and enhancements before they make it into an
+official release, perform a `Subversion`_ checkout instead. The following
+command will check the application's development branch out to an
+``tagging-trunk`` directory::
+
+   svn checkout http://django-tagging.googlecode.com/svn/trunk/ tagging-trunk
+
+Add the resulting folder to your `PYTHONPATH`_ or symlink (`junction`_,
+if you're on Windows) the ``tagging`` directory inside it into a
+directory which is on your PYTHONPATH, such as your Python
+installation's ``site-packages`` directory.
+
+You can verify that the application is available on your PYTHONPATH by
+opening a Python interpreter and entering the following commands::
+
+   >>> import tagging
+   >>> tagging.VERSION
+   (0, 3, 'pre')
+
+
+
+Once you've installed Django Tagging and want to use it in your Django
+applications, do the following:
+
+   1. Put ``'tagging'`` in your ``INSTALLED_APPS`` setting.
+   2. Run the command ``manage.py syncdb``.
+
+The ``syncdb`` command creates the necessary database tables and
+creates permission objects for all installed apps that need them.
+
+That's it!
