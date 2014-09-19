@@ -59,7 +59,10 @@ Quickstart
     Widget.tags.count()
 
     - Get related tags (retrieve tags used by model instances which are also tagged with tag1 and tag2)
-    Widget.tags.related(['tag1', 'tag2'], counts=True, min_count=3)
+    Widget.tags.related('tag1', min_count=1)
+    [<Tag: tag2>]
+    Widget.tags.related(['tag1', 'tag2'], min_count=1)
+    []
 
 
 Authors
