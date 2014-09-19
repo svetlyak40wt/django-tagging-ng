@@ -11,8 +11,7 @@ This is a enhanced tagging application for Django projects
 
 Rquirements
 -----------
-Note that this application requires Python 2.3 or later, and Django 0.96 or later. You can obtain Python from
-http://www.python.org/ and Django from http://www.djangoproject.com/.
+Note that this application requires Python 2.3 or later, and Django 0.96 or later. You can obtain Python from http://www.python.org/ and Django from http://www.djangoproject.com/.
 
 
 Quickstart
@@ -42,7 +41,7 @@ Quickstart
 
     - Get tag for instance:
     w.tags
-    'tag1 tag2'
+     [<Tag: tag1>, <Tag: tag2>]
 
     - Retrive instances with tag1 AND tag2
    TaggedItem.objects.get_by_model(Widget, [house_tag, thing_tag])
@@ -53,14 +52,11 @@ Quickstart
 
 
     - Get all tags for a model:
-    Widget.tags
-   'tag1 tag2 tag3 tag4 tag5'
-
-   - Get cloud for a model:
-   Widget.cloud()
+   Widget.tags.all()
+   [<Tag: tag1>, <Tag: tag2>>]
 
     - Get tags for a model with usage counts:
-    Widget.tags.usage(counts=True)
+    Widget.tags.count()
 
     - Get related tags (retrieve tags used by model instances which are also tagged with tag1 and tag2)
     Widget.tags.related(['tag1', 'tag2'], counts=True, min_count=3)
